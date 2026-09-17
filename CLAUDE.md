@@ -1,6 +1,6 @@
 # Redline
 
-Upload a contract, lease, freelance agreement or terms of service; get back
+Upload a contract, commercial lease, freelance agreement or terms of service; get back
 what it says and what it costs you.
 
 ## Settled decisions
@@ -24,7 +24,7 @@ Build these and stop:
 1. Upload and browser-side parse
 2. Plain-English summary
 3. Risk flags ranked by severity, each showing its source sentence
-4. A drafted counter-offer for each flagged clause
+4. A drafted counter-offer for each eligible flagged clause
 5. A question box answered only from the document
 6. An editable list of the user's own red lines, which drives the analysis
 7. A saved library of past documents
