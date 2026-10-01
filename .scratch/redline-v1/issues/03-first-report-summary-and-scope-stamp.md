@@ -18,3 +18,4 @@
 - [ ] The Draft page shows an in-progress state while analysis runs
 - [ ] A failed analysis shows a clear message and a retry that reuses the stored Draft, with no re-upload
 - [ ] Deterministic test through the public interface with the fake client: the scope stamp is on every Report
+- [ ] A deterministic banned-claims test reads every piece of fixed copy and fails if any says a document is safe to sign or compares Underline to a lawyer. It starts with the scope stamp; tickets 07, 10 and 16 add their fixed copy to it

@@ -10,7 +10,7 @@
 
 - [ ] The app runs locally against a local Supabase started through the CLI, with setup steps in the README
 - [ ] A Signer can sign up, sign in and sign out
-- [ ] A signed-out visitor who opens the library is sent to sign in
+- [ ] A signed-out Signer who opens the library is sent to sign in
 - [ ] A signed-in Signer sees an empty library with a plain empty state
 - [ ] Credentials live only in `.env.local`; an `.env.example` lists every variable with no values
-- [ ] Colours come from the ADR 0006 starting tokens; red appears nowhere in this ticket's UI
+- [ ] Colors come from the ADR 0006 starting tokens; red appears nowhere in this ticket's UI

@@ -18,7 +18,7 @@ A reader can check every flag without trusting us. They can find the quoted sent
 
 ## Consequences
 
-- Risks that live in what the document omits (no late-payment fee, no scope cap) have no sentence to cite. They cannot be risk flags under this rule and would need a separate, clearly labelled treatment.
+- Risks that live in what the document omits (no late-payment fee, no scope cap) have no sentence to cite. They cannot be risk flags under this rule and would need a separate, clearly labeled treatment.
 - Anything that corrupts the extracted text breaks citations, which is why OCR for scanned documents stays out of scope.
 - Flags that depend on several clauses together must cite each sentence they rely on, or be split.
 - Generation must return the source sentence alongside each flag, and the app must check that it appears in the stored text before showing the flag. Near-matches are failures, not fuzzy passes.

@@ -8,13 +8,13 @@ Status: Accepted. Date: 2026-09-30.
 2. **Red line** keeps its glossary meaning: a term the Signer has said they will not accept. The name change removes the collision with the product name.
 3. The brand is ink on paper. Red is reserved for the **Dangerous** severity and is not used for the logo, navigation, primary buttons or any other chrome.
 4. A **Clean verdict** is rendered in a calm neutral, never in a success green or with a checkmark.
-5. A quoted **Source sentence** is always ink on paper with an underline, never a coloured fill. Severity colour appears on the flag's severity label beside the quotation, not on the quotation.
+5. A quoted **Source sentence** is always ink on paper with an underline, never a colored fill. Severity color appears on the flag's severity label beside the quotation, not on the quotation.
 
 ## Alternatives
 
 - **Keep Redline.** The legal sense of redlining is exactly what a Counter-offer does. Rejected because redlineapp.net already sells consumer AI contract scanning in the same $10 to $30 band that this product would sit in, and because the word was doing three jobs at once: the product name, the Signer's Red line, and the industry verb for marking up a contract. A product whose claim is precision cannot overload its own most important word.
-- **Redflag.** Immediately legible and needs no explanation. Rejected because it is the most generic phrase in the category, it promises alarms rather than evidence, it reads oddly on a Clean verdict, and it pulls the brand toward red, which is the colour that has to stay scarce.
-- **A red or oxblood brand with red also meaning Dangerous.** Rejected because a reader who sees red in the logo, the header and the buttons stops reading red as a warning. The severity tier loses the only colour it has.
+- **Redflag.** Immediately legible and needs no explanation. Rejected because it is the most generic phrase in the category, it promises alarms rather than evidence, it reads oddly on a Clean verdict, and it pulls the brand toward red, which is the color that has to stay scarce.
+- **A red or oxblood brand with red also meaning Dangerous.** Rejected because a reader who sees red in the logo, the header and the buttons stops reading red as a warning. The severity tier loses the only color it has.
 - **Green for a Clean verdict.** Rejected because green with a checkmark says "approved, safe to sign" more loudly than the wording can take back, and ADR 0004 forbids that claim.
 
 ## Why
@@ -29,5 +29,5 @@ Reserving red follows from the same place. The severity tiers are the product's 
 - `PRD.md`, `research/`, and `.scratch/redline-v1/spec.md` still say Redline. They are dated documents and are left as written. Anything new uses Underline.
 - The repository directory and the GitHub remote keep the name `redline`. Renaming them buys nothing and breaks existing clones.
 - The open question in PRD section 8 about the name collision is closed by this decision.
-- The palette needs a non-red brand accent, and the UI needs a severity label distinct enough to carry meaning on its own, because colour alone cannot be the signal for a reader who does not see it.
+- The palette needs a non-red brand accent, and the UI needs a severity label distinct enough to carry meaning on its own, because color alone cannot be the signal for a reader who does not see it.
 - Starting tokens, to be revisited when the UI is built: paper `#FAF9F7` / `#121316`, ink `#14161A` / `#F2F1EE`, Dangerous `#B3261E` on `#FDECEA`, Caution `#8A5A00` on `#FDF3DF`, Clean verdict `#3F4A54` on `#EDF0F2`, Non-negotiable as an ink outline with no fill.

@@ -1,6 +1,6 @@
 # 06: Counter-offers and Non-negotiable clauses
 
-**What to build:** Each flagged clause the Signer can negotiate comes with a Counter-offer they can copy and send as written. A Non-negotiable clause is still flagged at its true severity, labelled take-it-or-leave-it, and gets no Counter-offer (ADR 0003).
+**What to build:** Each flagged clause the Signer can negotiate comes with a Counter-offer they can copy and send as written. A Non-negotiable clause is still flagged at its true severity, labeled take-it-or-leave-it, and gets no Counter-offer (ADR 0003).
 
 **Blocked by:** 04 (Risk flags with verified Source sentences)
 

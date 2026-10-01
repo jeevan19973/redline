@@ -14,7 +14,7 @@ Verbatim quote: "Every so many months, I go and look at it and shake my head. I'
 Source: https://www.consumerreports.org/cro/news/2015/03/are-you-giving-up-your-right-to-sue-without-knowing-it/index.htm
 
 ### 2. Amanda-Rose Smith, consumer/bride, Auburn, California. Clause: non-refundable deposit
-Smith signed a non-refundable wedding venue contract with Power's Mansion Inn, paying $5,999 for a date eight months out. Her fiancé Bryson died in January after his car broke down on I-80. She contacted the venue owner about cancelling one week after his death. The owner avoided contact as the wedding date approached and she had to pursue small claims court to try to recover the deposit.
+Smith signed a non-refundable wedding venue contract with Power's Mansion Inn, paying $5,999 for a date eight months out. Her fiancé Bryson died in January after his car broke down on I-80. She contacted the venue owner about canceling one week after his death. The owner avoided contact as the wedding date approached and she had to pursue small claims court to try to recover the deposit.
 
 Source: https://www.cbsnews.com/sacramento/news/call-kurtis-my-fiance-died-and-wedding-venue-owner-refuses-to-refund-my-wedding-deposit/
 
@@ -73,7 +73,7 @@ Source: https://www.axios.com/2024/08/21/disney-plus-court-case-arbitration
 - The clause categories that keep recurring across renters, consumers, and freelancers are: arbitration (loses the right to sue), non-refundable deposit/cancellation terms (money forfeited regardless of circumstance, even death), non-compete (locks people out of future work they didn't know was restricted), IP/pre-existing-materials assignment (transfers a contractor's own tools and past work), and open-ended scope/revision terms (missing caps let a client's demands expand indefinitely).
 - Freelancers describe the pain less as "I read a bad clause" and more as "there was no clause protecting me," meaning the gap Redline needs to address is as much about absent protections as misunderstood ones.
 - Consumer harm from fine print tends to surface at the worst possible moment: a death, a totalled relationship, a business closing, when the person has the least capacity to fight a venue or dealer over a clause they signed months or years earlier.
-- Several sources (a wedding venue executive quoted in the Fox News piece, dealership behaviour in the Perz case) show that the counterparty explains the clause as ordinary business necessity, so the person who got hurt often still cannot tell, after the fact, whether the term was standard or predatory.
+- Several sources (a wedding venue executive quoted in the Fox News piece, dealership behavior in the Perz case) show that the counterparty explains the clause as ordinary business necessity, so the person who got hurt often still cannot tell, after the fact, whether the term was standard or predatory.
 - Consequences cluster into three buckets: money forfeited outright (deposits, fees), money delayed or never collected (freelancer non-payment, scope creep), and rights forfeited silently (arbitration, non-compete) that the person only discovers when they try to exercise them.
 
 ## What I could not find

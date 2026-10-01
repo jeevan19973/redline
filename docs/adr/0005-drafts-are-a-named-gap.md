@@ -12,6 +12,6 @@ Redline is used before signing and produces Counter-offers, so it causes revised
 
 ## Consequences
 
-- The quiet change in another clause is not caught in v1. The only defence is the stamp on the report and the Signer re-uploading.
+- The quiet change in another clause is not caught in v1. The only defense is the stamp on the report and the Signer re-uploading.
 - The saved library will contain several Drafts of the same deal as unrelated documents. That is expected in v1, not a bug.
 - If Draft comparison is added later, the library's data model will need a way to group Drafts of one deal. Nothing in v1 should make that grouping hard to add.

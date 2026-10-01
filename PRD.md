@@ -2,6 +2,8 @@
 
 Status: Draft. Date: 2026-09-16. Decisions behind this brief: `docs/adr/0001` to `0005`. Terms in **bold** are defined in `CONTEXT.md`.
 
+Amended 2026-09-30. The product is now called Underline (ADR 0006). v1 also has a public landing page for an invite-only beta, with single-use invite codes and a one-time limit of 5 analyses and 25 questions per Signer (ADR 0007). Section 3 below still lists the original seven items; CLAUDE.md holds the current scope.
+
 ## 1. Who this is for
 
 **A small business owner or independent operator, before they sign.** The document is one of four kinds: a **Commercial lease**, a vendor or service contract, a freelance agreement they are signing as the contractor, or a vendor's terms of service. They are the **Signer**. The other side is the **Counterparty**.
@@ -39,7 +41,7 @@ He pushed back, and walked away when the client treated the objection as unreaso
    - a **Reading**: a plain, confident statement of what the sentence does to the Signer, with no hedging language. If a sentence can honestly be read two ways, the Reading gives both;
    - a severity, either **Dangerous** or **Caution** (section 5);
    - a **Confidence** of high, medium or low. Confidence never changes severity.
-4. **A Counter-offer for each flagged clause, except Non-negotiable clauses.** A **Non-negotiable clause** is flagged at its true severity and labelled take-it-or-leave-it: sign or walk away. Whether a clause is negotiable must rest on the document's text, not on guesses about the Counterparty.
+4. **A Counter-offer for each flagged clause, except Non-negotiable clauses.** A **Non-negotiable clause** is flagged at its true severity and labeled take-it-or-leave-it: sign or walk away. Whether a clause is negotiable must rest on the document's text, not on guesses about the Counterparty.
 5. **A question box answered only from the document.** If the document does not answer the question, the reply says so.
 6. **The Signer's Red lines.** An editable list that can add flags or raise a Caution flag to Dangerous. It cannot suppress or lower a Dangerous flag (the **Severity floor**).
 7. **A saved library of past documents.** Every upload is its own **Draft**, and Drafts are not linked to each other.
@@ -51,7 +53,7 @@ Every report also carries these two things:
 
 ## 4. What good looks like
 
-These are measured on a labelled fixture set of real documents covering all four document types. The fixture set includes:
+These are measured on a labeled fixture set of real documents covering all four document types. The fixture set includes:
 
 - documents with no Dangerous clause;
 - documents with known Dangerous clauses;
@@ -69,7 +71,7 @@ The pass/fail checks run on every change. The measured targets are my proposals:
 | Citation integrity | 100% of displayed Risk flags have every Source sentence present verbatim in the stored text. A near-match fails. |
 | Dangerous recall | Zero Dangerous clauses in the fixtures missed or ranked below Dangerous. |
 | Severity floor | With a Red line removed for a clause type, a Dangerous flag of that type still shows. |
-| Non-negotiable handling | Zero Counter-offers attached to a flag labelled Non-negotiable. |
+| Non-negotiable handling | Zero Counter-offers attached to a flag labeled Non-negotiable. |
 | Question box | For fixture questions the document cannot answer, 100% of replies say the document does not say. None invent an answer. |
 | Clean verdict wording | No report contains "safe to sign" or an equivalent. Every Clean verdict lists what was checked. |
 | Guaranty gap | No report on a lease that refers to a separate guaranty implies that the Signer's personal exposure was checked. |
@@ -138,7 +140,7 @@ Any clause below gets a Counter-offer unless it is a Non-negotiable clause.
 | Payments and billing | They don't make the analysis more trustworthy, which is what v1 exists to prove. The research has no willingness-to-pay figure to price against anyway. |
 | Sharing a document between users | Does not make the analysis more trustworthy. |
 | Omission detection (flagging protections that are missing) | A Risk flag must cite a sentence, and a missing clause has none (ADR 0001). This is the research's main freelancer finding, and the research recommended making it a headline feature. Freelancers bear the cost. |
-| Draft comparison | Outside scope. The scope stamp is the only defence (ADR 0005). |
+| Draft comparison | Outside scope. The scope stamp is the only defense (ADR 0005). |
 | Analyzing documents that were not uploaded, such as a separate guaranty | Redline states only what the uploaded text says. The scope stamp and the guaranty-gap check cover this. |
 | Handling for residential leases | Renters are not served. v1 does not detect or refuse residential leases, and is neither designed nor tested for them. |
 | Help after a dispute | v1 is for before signing. Explaining what someone has already agreed to, mid-dispute, is closer to legal advice. |
@@ -147,7 +149,7 @@ Any clause below gets a Counter-offer unless it is a Non-negotiable clause.
 ## 8. What the research could not tell us
 
 - **Whether personal guarantees actually hurt small business owners, and how often.** The Dangerous tier's flagship clause has no evidence behind it.
-- **Whether small business owners will stop to review a document before signing.** The only behavioural evidence is about consumers: 91% accept terms without reading them. Nothing covers business documents, where the stakes are higher.
+- **Whether small business owners will stop to review a document before signing.** The only behavioral evidence is about consumers: 91% accept terms without reading them. Nothing covers business documents, where the stakes are higher.
 - **What anyone would pay.** Every price in the research is on the supply side. The demand-side evidence points the other way: cost pushes owners toward doing nothing, not toward cheaper help.
 - **What real commercial leases and vendor contracts contain,** or how often each clause type in section 5 appears. The ranking mixes federal rulemaking, union surveys, one state's complaints and legal commentary. Most of that evidence is about consumers or employees, applied to owners by analogy.
 - **Whether competitors already show the exact source sentence.** This was inferred from marketing copy, so it is unverified that citations set Redline apart.

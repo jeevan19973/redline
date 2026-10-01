@@ -1,8 +1,8 @@
 # 14: Fixture eval run
 
-**What to build:** One command runs the Analysis module through the OpenRouter client over the labelled fixture set and reports the result. The pass/fail checks from PRD section 4 fail the run; the measured targets are reported per run but not enforced until they are agreed.
+**What to build:** One command runs the Analysis module through the OpenRouter client over the labeled fixture set and reports the result. The pass/fail checks from PRD section 4 fail the run; the measured targets are reported per run but not enforced until they are agreed.
 
-**Blocked by:** 05 (Confidence label behind a switch), 06 (Counter-offers and Non-negotiable clauses), 07 (Clean verdict and guaranty gap), 09 (Free-text Red lines add flags), 10 (Question box answered only from the document), 13 (Labelled fixture set)
+**Blocked by:** 05 (Confidence label behind a switch), 06 (Counter-offers and Non-negotiable clauses), 07 (Clean verdict and guaranty gap), 09 (Free-text Red lines add flags), 10 (Question box answered only from the document), 13 (Labeled fixture set)
 
 **Status:** ready-for-agent
 

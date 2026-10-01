@@ -28,17 +28,24 @@ Build these and stop:
 2. Plain-English summary
 3. Risk flags ranked by severity, each showing its source sentence
 4. A drafted counter-offer for each flagged clause, except a Non-negotiable
-   clause, which is flagged at its true severity and labelled
+   clause, which is flagged at its true severity and labeled
    take-it-or-leave-it (ADR 0003)
 5. A question box answered only from the document
 6. An editable list of the user's own red lines, which drives the analysis
 7. A saved library of past documents
+8. One public landing page (ADR 0007)
+9. Invite-only sign-up with single-use invite codes, and a one-time limit
+   of 5 analyses and 25 questions per Signer (ADR 0007)
 
 Excluded on purpose: payments, billing, OCR for scanned documents, and
 sharing a document between users. This version exists to prove the analysis
 can be trusted. None of those make it more trustworthy, and OCR actively
 undermines it, because a citation is worthless when the text it points at
 was misread.
+
+Items 8 and 9 are the one exception. They do not make the analysis more
+trustworthy either, but invited owners need a page that states the claim
+honestly, and with no billing the spend has to stay bounded (ADR 0007).
 
 ## Working while I am away
 
@@ -57,12 +64,22 @@ Two exceptions wait for me instead:
   secret. A key is public the moment it is pushed and has to be rotated.
 - State only what the document says. Where the text does not support a
   claim, the product does not make it.
+- All copy a user reads in this product, meaning the landing page, UI
+  labels, error messages and empty states, has to be run through the
+  humanizer skill before it is committed. Copy that reads as though a model
+  wrote it is a defect, not a matter of taste.
+- Write US English in this project: the website and all product copy,
+  docs, code comments and commit messages. v1 is for the US market. This
+  overrides the global Canadian English rule. Quotations stay exactly as
+  their source wrote them.
 
 ## Read these when they matter
 
 - research/summary.md holds the user research. Read it before deciding
   what the product should do.
-- PRD.md will hold the brief once it exists. Read it before building.
+- PRD.md holds the brief for v1, and PRODUCT.md the current product record.
+  Read both before building. Where they differ from this file, this file
+  holds the current scope.
 
 ## Agent skills
 

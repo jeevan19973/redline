@@ -5,7 +5,7 @@ Underline reads a contract before someone signs it and tells them what it says a
 ## People
 
 **Signer**:
-The person who uploads a document to Underline because they are about to sign it. In v1, a small business owner or independent operator.
+A person about to sign a document who uses Underline to review it, from reading the landing page through uploading and acting on the report. In v1, a small business owner or independent operator in the US.
 _Avoid_: User (too broad), customer, client, consumer
 
 **Counterparty**:

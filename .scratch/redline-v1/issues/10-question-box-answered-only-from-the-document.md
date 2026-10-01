@@ -12,3 +12,4 @@
 - [ ] When an answer's Source sentences fail verification, it is replaced by the same fixed reply
 - [ ] Questions and answers are not persisted
 - [ ] Deterministic tests with the fake client: the fixed reply is returned when the model finds no support, and when its citations fail verification
+- [ ] The "does not say" template is added to the banned-claims test from ticket 03
