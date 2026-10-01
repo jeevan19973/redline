@@ -1,11 +1,11 @@
-# Redline
+# Underline
 
-Redline reads a contract before someone signs it and tells them what it says and what it costs them. This glossary fixes the words the brief, the code and the prompts use for that.
+Underline reads a contract before someone signs it and tells them what it says and what it costs them. This glossary fixes the words the brief, the code and the prompts use for that.
 
 ## People
 
 **Signer**:
-The person who uploads a document to Redline because they are about to sign it. In v1, a small business owner or independent operator.
+The person who uploads a document to Underline because they are about to sign it. In v1, a small business owner or independent operator.
 _Avoid_: User (too broad), customer, client, consumer
 
 **Counterparty**:
@@ -49,11 +49,11 @@ A clause the Counterparty will not change, typically in standard terms of servic
 _Avoid_: Boilerplate (boilerplate is often negotiable), fixed term
 
 **Reading**:
-Redline's plain, confident statement of what a Source sentence does to the Signer. Every Risk flag has one Reading, a severity and a Confidence.
+Underline's plain, confident statement of what a Source sentence does to the Signer. Every Risk flag has one Reading, a severity and a Confidence.
 _Avoid_: Interpretation, explanation, analysis
 
 **Confidence**:
-A high, medium or low label on a Risk flag saying how sure Redline is of its reading of the Source sentence. Separate from severity, and it never lowers it.
+A high, medium or low label on a Risk flag saying how sure Underline is of its reading of the Source sentence. Separate from severity, and it never lowers it.
 _Avoid_: Certainty, probability, score
 
 **Clean verdict**:
@@ -66,7 +66,7 @@ _Avoid_: Version, revision, copy
 
 **Counter-offer**:
 Replacement wording for a flagged clause that the Signer can send to the Counterparty.
-_Avoid_: Redline (the product name), suggestion, rewrite
+_Avoid_: Redline, redlining (the industry verb for marking up a contract; this project does not use it), suggestion, rewrite
 
 **Red line**:
 A term the Signer has said they will not accept. Red lines are the Signer's own and drive the analysis.

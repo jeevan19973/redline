@@ -1,4 +1,4 @@
-# Redline
+# Underline
 
 Upload a contract, commercial lease, freelance agreement or terms of service; get back
 what it says and what it costs you.
@@ -7,6 +7,9 @@ what it says and what it costs you.
 
 Do not reopen these.
 
+- The product is called Underline (ADR 0006). Red is reserved for the
+  Dangerous severity, never for the brand. Earlier documents, including
+  PRD.md and research/, still say Redline.
 - Next.js, Supabase for auth and database, deployed on Vercel.
 - The uploaded file is parsed in the browser. Only the extracted text is
   stored, never the original file.
@@ -24,7 +27,9 @@ Build these and stop:
 1. Upload and browser-side parse
 2. Plain-English summary
 3. Risk flags ranked by severity, each showing its source sentence
-4. A drafted counter-offer for each eligible flagged clause
+4. A drafted counter-offer for each flagged clause, except a Non-negotiable
+   clause, which is flagged at its true severity and labelled
+   take-it-or-leave-it (ADR 0003)
 5. A question box answered only from the document
 6. An editable list of the user's own red lines, which drives the analysis
 7. A saved library of past documents
