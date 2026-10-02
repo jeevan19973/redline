@@ -83,44 +83,49 @@ describe("analyzeDraft: Non-negotiable clauses", () => {
     expect(report.citationFailures).toEqual([]);
   });
 
-  it("keeps the flag and its severity but drops the label when the basis is still not in the text, and records it", async () => {
+  it("keeps the flag and its severity but shows neither the label nor the model's Counter-offer when the basis is still not in the text, and records it", async () => {
     expect(lease.text).not.toContain(wrongBasis);
-    const proposed = nonNegotiableFlag(indemnity, wrongBasis);
-    const wording = "Principal's obligations under this Section are limited to six months of Base Rent.";
-    const client = fakeModelClient(
-      { data: onlyFlags(proposed) },
-      { data: basisRequotePayload(wrongBasis) },
-      // Now negotiable, and the model gave no Counter-offer with its
-      // Non-negotiable call, so it is asked for one.
-      { data: counterOfferPayload(wording) },
-    );
+    const proposed = nonNegotiableFlag(indemnity, wrongBasis, {
+      counterOffer: "Principal's obligations under this Section are limited to six months of Base Rent.",
+    });
+    // A third call would fail as unscripted: no Counter-offer is asked for.
+    const client = fakeModelClient({ data: onlyFlags(proposed) }, { data: basisRequotePayload(wrongBasis) });
     const report = await analyzeDraft(lease.text, [], client);
 
-    expect(client.calls).toBe(3);
+    expect(client.calls).toBe(2);
     expect(report.riskFlags).toHaveLength(1);
     const [shown] = report.riskFlags;
     expect(shown.severity).toBe("Dangerous");
     expect(shown.sourceSentences).toEqual([{ text: indemnity.sentence, offset: lease.text.indexOf(indemnity.sentence) }]);
-    expect(shown.negotiability).toBe("negotiable");
+    expect(shown.negotiability).toBe("unconfirmedNonNegotiable");
     expect(shown).not.toHaveProperty("nonNegotiableBasis");
-    expect(shown.counterOffer).toBe(wording);
+    expect(shown).not.toHaveProperty("counterOffer");
     expect(report.citationFailures).toEqual([
       { nonNegotiableBasis: { flag: proposed }, failedSentences: [wrongBasis], attempts: 2 },
     ]);
     expect(report.counterOfferGaps).toEqual([]);
+
+    // The same on the way to the browser and back from storage.
+    const displayed = displayReport(report, { showConfidence: false }).riskFlags![0];
+    expect(displayed.negotiability).toBe("unconfirmedNonNegotiable");
+    expect(displayed).not.toHaveProperty("counterOffer");
+    expect(readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true })?.riskFlags).toEqual(
+      report.riskFlags,
+    );
   });
 
-  it("keeps the model's Counter-offer, with no extra call, when a failed basis leaves the flag negotiable", async () => {
-    const wording = counterOfferFor(renewal);
+  it("asks for no Counter-offer when the model gave none and its basis fails", async () => {
     const client = fakeModelClient(
-      { data: onlyFlags(nonNegotiableFlag(renewal, "", { counterOffer: wording })) },
+      { data: onlyFlags(nonNegotiableFlag(renewal, "")) },
       { data: basisRequotePayload("") },
     );
     const report = await analyzeDraft(lease.text, [], client);
 
     expect(client.calls).toBe(2);
-    expect(report.riskFlags[0]).toMatchObject({ severity: "Caution", negotiability: "negotiable", counterOffer: wording });
+    expect(report.riskFlags[0]).toMatchObject({ severity: "Caution", negotiability: "unconfirmedNonNegotiable" });
+    expect(report.riskFlags[0]).not.toHaveProperty("counterOffer");
     expect(report.citationFailures).toHaveLength(1);
+    expect(report.counterOfferGaps).toEqual([]);
     // The flag was shown, so a failed basis does not count against the
     // Clean verdict.
     expect(report.cleanVerdict).toBeDefined();
@@ -280,6 +285,27 @@ describe("readStoredReport and displayReport: negotiability", () => {
     const stored = JSON.parse(JSON.stringify(await mixedReport()));
     const fixed = stored.riskFlags.find((flag: { negotiability: string }) => flag.negotiability === "nonNegotiable");
     fixed.counterOffer = "Wording written into the row.";
+    expect(readStoredReport(stored, { showConfidence: true })).toBeNull();
+  });
+
+  async function unconfirmedReport() {
+    return analyzeDraft(
+      lease.text,
+      [],
+      fakeModelClient({ data: onlyFlags(nonNegotiableFlag(indemnity, wrongBasis)) }, { data: basisRequotePayload("") }),
+    );
+  }
+
+  it("refuses a stored unconfirmed Non-negotiable flag that carries a Counter-offer", async () => {
+    const stored = JSON.parse(JSON.stringify(await unconfirmedReport()));
+    expect(readStoredReport(stored, { showConfidence: true })).not.toBeNull();
+    stored.riskFlags[0].counterOffer = "Wording written into the row.";
+    expect(readStoredReport(stored, { showConfidence: true })).toBeNull();
+  });
+
+  it("refuses a stored unconfirmed Non-negotiable flag that carries a basis", async () => {
+    const stored = JSON.parse(JSON.stringify(await unconfirmedReport()));
+    stored.riskFlags[0].nonNegotiableBasis = basisSentence;
     expect(readStoredReport(stored, { showConfidence: true })).toBeNull();
   });
 

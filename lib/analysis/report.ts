@@ -68,7 +68,9 @@ export type RedLineRiskFlag = VerifiedFlagBody & {
 // none when the model gave none even after a regeneration (recorded in the
 // Report's counterOfferGaps). A Non-negotiable flag carries the sentence its
 // basis rests on, verified like a Source sentence, and never a Counter-offer.
-// Negotiability never changes severity.
+// A flag the model called Non-negotiable whose basis could not be verified
+// is unconfirmed: it carries neither. A Counter-offer is present only on a
+// negotiable flag. Negotiability never changes severity.
 export type Negotiability =
   | {
       readonly negotiability: "negotiable";
@@ -81,6 +83,15 @@ export type Negotiability =
       // The sentence that shows the Counterparty will not change the clause,
       // such as a statement that the terms are standard and not negotiable.
       readonly nonNegotiableBasis: SourceSentence;
+      readonly counterOffer?: never;
+    }
+  | {
+      // The model called it Non-negotiable, but the basis sentence failed
+      // verification even after a regeneration (recorded in the Report's
+      // citationFailures). Shown at its severity with neither the
+      // take-it-or-leave-it label nor a Counter-offer, and none is asked for.
+      readonly negotiability: "unconfirmedNonNegotiable";
+      readonly nonNegotiableBasis?: never;
       readonly counterOffer?: never;
     };
 
@@ -149,8 +160,10 @@ export type GuarantyCitationFailure = {
 };
 
 // A Non-negotiable basis sentence that failed verification, even after a
-// regeneration. The flag itself was shown, at its severity, as negotiable:
-// the take-it-or-leave-it label is not shown when its basis cannot be cited.
+// regeneration. The flag itself was shown, at its severity, as unconfirmed:
+// the take-it-or-leave-it label is not shown when its basis cannot be cited,
+// and no Counter-offer is shown either, since the clause may not be open to
+// one.
 export type BasisCitationFailure = {
   readonly nonNegotiableBasis: {
     // The flag as the model first proposed it, basis included.
@@ -384,8 +397,9 @@ function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value
 }
 
 // A negotiable flag with or without a Counter-offer, a Non-negotiable flag
-// with its basis and no Counter-offer, or a flag stored before negotiability
-// existed, with none of the three fields.
+// with its basis and no Counter-offer, an unconfirmed Non-negotiable flag
+// with neither, or a flag stored before negotiability existed, with none of
+// the three fields.
 function hasNegotiability(flag: Record<string, unknown>): boolean {
   const { negotiability, counterOffer, nonNegotiableBasis } = flag;
   if (negotiability === undefined) return counterOffer === undefined && nonNegotiableBasis === undefined;
@@ -393,6 +407,7 @@ function hasNegotiability(flag: Record<string, unknown>): boolean {
     return nonNegotiableBasis === undefined && (counterOffer === undefined || isText(counterOffer));
   }
   if (negotiability === "nonNegotiable") return counterOffer === undefined && isSourceSentence(nonNegotiableBasis);
+  if (negotiability === "unconfirmedNonNegotiable") return counterOffer === undefined && nonNegotiableBasis === undefined;
   return false;
 }
 

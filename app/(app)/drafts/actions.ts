@@ -255,7 +255,7 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
         console.error("Withheld a Risk flag whose Source sentences failed verification", failure.flag.clauseType);
       } else if ("nonNegotiableBasis" in failure) {
         console.error(
-          "Showed a Risk flag as negotiable because its Non-negotiable basis failed verification",
+          "Showed a Risk flag with no take-it-or-leave-it label or Counter-offer because its Non-negotiable basis failed verification",
           failure.nonNegotiableBasis.flag.clauseType,
         );
       } else {

@@ -257,3 +257,7 @@ code).
   regeneration call, through the same `locateWithRequote` loop flags use. If
   it still fails, or that call fails, the Signer gets the fixed "does not
   say" reply. It still counts as one question.
+- Fix 4: a flag the model calls Non-negotiable whose basis sentence still
+  fails after the regeneration is now `unconfirmedNonNegotiable`. It shows at
+  its severity with neither the take-it-or-leave-it label nor a Counter-offer,
+  no Counter-offer is asked for, and the failure stays in `citationFailures`.

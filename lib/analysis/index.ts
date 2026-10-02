@@ -64,10 +64,12 @@ export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./a
 // verified, even after one regeneration call, is withheld and recorded in
 // citationFailures instead; so is a guaranty-gap sentence that fails the
 // same way.
-// Every shown flag is negotiable or Non-negotiable. A Non-negotiable flag
-// never carries a Counter-offer, and its basis sentence is verified like a
-// Source sentence; one that still fails after a regeneration is recorded in
-// citationFailures and the flag shows as negotiable. A negotiable flag the
+// Every shown flag is negotiable, Non-negotiable or unconfirmed. A
+// Non-negotiable flag never carries a Counter-offer, and its basis sentence
+// is verified like a Source sentence; one that still fails after a
+// regeneration is recorded in citationFailures and the flag shows as
+// unconfirmed, with neither the take-it-or-leave-it label nor a
+// Counter-offer, and none is asked for. A negotiable flag the
 // model gives no Counter-offer, even after a regeneration, shows without one
 // and is recorded in counterOfferGaps. Negotiability never hides a flag or
 // changes its severity.

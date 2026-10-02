@@ -13,9 +13,10 @@ import type { BasisCitationFailure, CounterOfferGap, Negotiability, ProposedFlag
 // - Non-negotiable: the basis sentence must be in the text by the same
 //   exact-match rule as a Source sentence, with one regeneration. Any
 //   Counter-offer the model wrote is dropped.
-// - A basis that still fails is recorded, and the flag is treated as
-//   negotiable, since a take-it-or-leave-it label that cannot cite its basis
-//   is not shown.
+// - A basis that still fails is recorded, and the flag is unconfirmed: no
+//   take-it-or-leave-it label, since it cannot cite its basis, and no
+//   Counter-offer either, since the clause may not be open to one. No
+//   Counter-offer is asked for.
 // - Negotiable: the model's Counter-offer, or after one regeneration request
 //   its new one, or none, recorded as a gap. Code never writes the wording.
 
@@ -33,7 +34,6 @@ export async function resolveNegotiability(
   modelClient: ModelClient,
 ): Promise<ResolvedNegotiability> {
   const sentences = sourceSentences.map((sentence) => sentence.text);
-  let basisFailure: BasisCitationFailure | undefined;
 
   if (proposed.negotiability === "nonNegotiable") {
     // A failure of the regeneration call itself rejects the whole analysis,
@@ -45,7 +45,10 @@ export async function resolveNegotiability(
     if (located.ok) {
       return { negotiability: { negotiability: "nonNegotiable", nonNegotiableBasis: located.sentences[0] } };
     }
-    basisFailure = { nonNegotiableBasis: { flag: proposed }, failedSentences: located.failed, attempts: ATTEMPTS };
+    return {
+      negotiability: { negotiability: "unconfirmedNonNegotiable" },
+      basisFailure: { nonNegotiableBasis: { flag: proposed }, failedSentences: located.failed, attempts: ATTEMPTS },
+    };
   }
 
   let counterOffer = proposed.counterOffer.trim();
@@ -55,7 +58,6 @@ export async function resolveNegotiability(
   }
   return {
     negotiability: counterOffer ? { negotiability: "negotiable", counterOffer } : { negotiability: "negotiable" },
-    ...(basisFailure && { basisFailure }),
     ...(!counterOffer && { counterOfferGap: { flag: proposed, attempts: ATTEMPTS } }),
   };
 }
