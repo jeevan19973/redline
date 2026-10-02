@@ -22,7 +22,9 @@ try {
   console.log(`Summary:\n${report.summary}\n`);
   console.log(`Risk flags (${report.riskFlags.length}):`);
   report.riskFlags.forEach((flag, index) => {
-    console.log(`\n${index + 1}. ${flag.severity}: ${clauseTypeLabel(flag.clauseType)} (${flag.clauseType})`);
+    const name =
+      flag.clauseType === "redLine" ? `Red line ${JSON.stringify(flag.crossesRedLine.text)}` : clauseTypeLabel(flag.clauseType);
+    console.log(`\n${index + 1}. ${flag.severity}: ${name} (${flag.clauseType})`);
     for (const reading of flag.readings) console.log(`   Reading: ${reading}`);
     for (const sentence of flag.sourceSentences) {
       console.log(`   Source sentence at offset ${sentence.offset}: ${JSON.stringify(sentence.text)}`);

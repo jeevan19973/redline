@@ -32,9 +32,11 @@ export function loadFixture(name: FixtureName): Fixture {
   return { name, text: read("txt"), sidecar: JSON.parse(read("json")) as Sidecar };
 }
 
-// A Risk flag as the model returns it in its structured output.
+// A Risk flag as the model returns it in its structured output. redLineId
+// names the free-text Red line a "redLine" flag crosses.
 export type ModelFlag = {
   clauseType: string;
+  redLineId?: string;
   sourceSentences: string[];
   readings: string[];
   reachesSignerPersonally: boolean;
@@ -50,6 +52,20 @@ export function modelFlag(clause: PlantedClause, overrides: Partial<ModelFlag> =
     sourceSentences: [clause.sentence],
     readings: [clause.why],
     reachesSignerPersonally: clause.expectedSeverity === "Dangerous",
+    ...overrides,
+  };
+}
+
+// The flag the model would return for a free-text Red line: clause type
+// "redLine", the Red line's id, and the given sentence quoted as is, with
+// the personal-reach fact false unless `overrides` says otherwise.
+export function redLineFlag(redLineId: string, sentence: string, overrides: Partial<ModelFlag> = {}): ModelFlag {
+  return {
+    clauseType: "redLine",
+    redLineId,
+    sourceSentences: [sentence],
+    readings: ["The document contains a term on your Red lines."],
+    reachesSignerPersonally: false,
     ...overrides,
   };
 }

@@ -122,8 +122,10 @@ export function clauseTypeLabel(clauseType: ClauseType): string {
 
 // Severity, decided in code (ADR 0003): Dangerous when the catalog says so,
 // or when the exposure reaches past the business to the Signer personally.
-// Everything else is Caution. How unusual a clause is never counts.
-export function severityFor(clauseType: ClauseType, reachesSignerPersonally: boolean): Severity {
-  if (catalogEntry(clauseType).defaultSeverity === "Dangerous") return "Dangerous";
+// Everything else is Caution. How unusual a clause is never counts. A flag
+// a free-text Red line added ("redLine") has no catalog severity, so only
+// personal reach decides it.
+export function severityFor(clauseType: ClauseType | "redLine", reachesSignerPersonally: boolean): Severity {
+  if (clauseType !== "redLine" && catalogEntry(clauseType).defaultSeverity === "Dangerous") return "Dangerous";
   return reachesSignerPersonally ? "Dangerous" : "Caution";
 }

@@ -17,6 +17,7 @@ stops early. The final section lists what to run first.
 | 04 Risk flags with verified Source sentences | done | 60 tests. Screen checked in headless Chrome via a temporary route. Clause labels want your read |
 | 07 Clean verdict and guaranty gap | done | 103 tests. No Clean verdict when a withheld flag would have been Dangerous |
 | 08 The Signer's Red lines raise severity, with the Severity floor | done | 119 tests. red_lines RLS checked in a rolled-back transaction; screen not run against a live database |
+| 09 Free-text Red lines add flags | done | 130 tests. Added flags use the personal-reach severity rule; 120-character limit |
 
 ## Decisions made in your absence
 

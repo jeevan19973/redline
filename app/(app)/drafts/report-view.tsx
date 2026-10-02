@@ -211,7 +211,7 @@ function CleanVerdictCard({ verdict }: { verdict: CleanVerdict }) {
 
 // One Risk flag on paper: the severity label (its meaning in the word, color
 // only on the label) with its depth gauge, the clause type, the Red line
-// that raised it if one did, each Source sentence underlined in ink with a
+// that raised it if one did, or the free-text Red line it crosses, each Source sentence underlined in ink with a
 // link to it in the text, then the Reading. The gauge shows reach, not rank:
 // a flag a Red line raised still reaches only the business, so it stays
 // shallow while its label says Dangerous.
@@ -236,11 +236,14 @@ function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; li
         <h4 className="flag__name" id={`${id}-name`}>
           <span className={`sev ${dangerous ? "sev--dangerous" : "sev--caution"}`}>{text.severity[flag.severity]}</span>
           <span className={`gauge ${deep ? "gauge--deep" : "gauge--shallow"}`} aria-hidden="true" />
-          <span className="flag__type">{clauseTypeLabel(flag.clauseType)}</span>
+          <span className="flag__type">
+            {flag.clauseType === "redLine" ? text.flags.redLineType : clauseTypeLabel(flag.clauseType)}
+          </span>
         </h4>
         {flag.raisedByRedLine && (
           <p className="flag__raised">{text.flags.raisedBy(clauseTypeLabel(flag.raisedByRedLine.clauseType))}</p>
         )}
+        {flag.crossesRedLine && <p className="flag__raised">{text.flags.crosses(flag.crossesRedLine.text)}</p>}
       </header>
 
       {flag.sourceSentences.map((sentence, sentenceIndex) => {

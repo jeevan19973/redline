@@ -65,6 +65,9 @@ export const copy = {
       showInText: "Show in text",
       twoReadings: "This can be read two ways:",
       raisedBy: (label: string) => `Raised by your Red line: ${label}. Without it, this flag would be Caution.`,
+      // A flag one of the Signer's free-text Red lines added.
+      redLineType: "Your Red line",
+      crosses: (redLine: string) => `Crosses your Red line: ${redLine}`,
     },
     // The Red lines a stored Report ran against (its snapshot).
     redLines: {
@@ -130,6 +133,33 @@ export const copy = {
         invalid: "Choose a clause type from the list.",
         notFound: "That Red line isn't on your list anymore. Reload the page to see your current list.",
         unexpected: "Something went wrong on our end. Try again.",
+      },
+    },
+    // The Signer's Red lines in their own words, for terms the default list
+    // doesn't cover.
+    freeText: {
+      title: "In your own words",
+      intro:
+        "Add a term the default list doesn't cover, such as \"Landlord can enter on short notice\". If a document contains it, the report quotes the sentence in a Risk flag, and there's no Clean verdict.",
+      empty: "You haven't written any yet.",
+      addLabel: "A term you won't accept",
+      editLabel: "Red line",
+      hint: (max: number) => `${max} characters at most.`,
+      add: "Add Red line",
+      adding: "Adding",
+      edit: "Edit",
+      save: "Save",
+      saving: "Saving",
+      cancel: "Cancel",
+      remove: "Remove",
+      removing: "Removing",
+      added: (text: string) => `Added "${text}".`,
+      changed: (text: string) => `Changed to "${text}".`,
+      removed: (text: string) => `Removed "${text}".`,
+      errors: {
+        empty: "Write the term you won't accept.",
+        tooLong: (max: number) => `That's too long. Keep it to ${max} characters or fewer.`,
+        duplicate: "That's already one of your Red lines.",
       },
     },
     catalog: {

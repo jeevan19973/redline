@@ -1,6 +1,6 @@
 import { CATALOG, severityFor } from "./catalog.ts";
 import type { VerifiedGuaranty } from "./guaranty.ts";
-import { catalogRedLineFor, type RedLine } from "./red-lines.ts";
+import { catalogRedLineFor, freeTextRedLineById, type RedLine } from "./red-lines.ts";
 import type { CleanVerdict, FlagCitationFailure, RiskFlag } from "./report.ts";
 import { CLEAN_VERDICT } from "./templates.ts";
 
@@ -9,7 +9,8 @@ import { CLEAN_VERDICT } from "./templates.ts";
 // whenever the model reported a separate guaranty, verified or not, because
 // a Clean verdict must never imply that guaranty was checked (ADR 0003).
 // A flag crossing one of the Signer's Red lines rules it out, as a Dangerous
-// flag does.
+// flag does: one a catalog Red line raised or is on, or one a free-text Red
+// line added.
 
 export function cleanVerdictFor(
   riskFlags: readonly RiskFlag[],
@@ -51,10 +52,20 @@ function qualifies(
     ({ flag }) => severityFor(flag.clauseType, flag.reachesSignerPersonally) === "Dangerous",
   );
   if (withheldDangerous) return false;
-  // No flag crosses a Red line: none was raised by one, and none is of a
-  // clause type the Signer marked as one they will not accept. That covers
-  // a withheld flag too, for the same reason as above.
-  if (riskFlags.some((flag) => flag.raisedByRedLine || catalogRedLineFor(flag.clauseType, redLines))) return false;
-  if (withheldFlags.some(({ flag }) => catalogRedLineFor(flag.clauseType, redLines))) return false;
+  // No flag crosses a Red line: none was raised by one, none is of a clause
+  // type the Signer marked as one they will not accept, and none was added
+  // by a free-text Red line. That covers a withheld flag too, for the same
+  // reason as above: the model found the term, and only its quotation
+  // failed. A flag naming a Red line that was not passed in never got this
+  // far, since it rests on nothing the Signer set.
+  const crosses = (flag: RiskFlag) =>
+    flag.clauseType === "redLine" || Boolean(flag.raisedByRedLine) || Boolean(catalogRedLineFor(flag.clauseType, redLines));
+  if (riskFlags.some(crosses)) return false;
+  const withheldCrosses = withheldFlags.some(({ flag }) =>
+    flag.clauseType === "redLine"
+      ? Boolean(freeTextRedLineById(flag.redLineId, redLines))
+      : Boolean(catalogRedLineFor(flag.clauseType, redLines)),
+  );
+  if (withheldCrosses) return false;
   return true;
 }

@@ -67,10 +67,14 @@ export function parseRequote(data: unknown): string[] {
   return parseSentences(sourceSentences, "the regeneration's sourceSentences", { allowEmpty: true });
 }
 
+// A catalog flag, or a flag the model says a free-text Red line produced:
+// clause type "redLine" and that Red line's id. The id is matched to the Red
+// lines passed in later, in flags.ts. A catalog flag's redLineId, which the
+// schema sends as an empty string, is ignored.
 function parseFlag(value: unknown, where: string): ProposedFlag {
-  const { clauseType, sourceSentences, readings, reachesSignerPersonally } = asObject(value, where);
-  if (!isClauseType(clauseType)) {
-    throw new MalformedModelOutput(`${where}.clauseType is not a catalog clause type`);
+  const { clauseType, redLineId, sourceSentences, readings, reachesSignerPersonally } = asObject(value, where);
+  if (clauseType !== "redLine" && !isClauseType(clauseType)) {
+    throw new MalformedModelOutput(`${where}.clauseType is not a catalog clause type or redLine`);
   }
   if (!Array.isArray(readings) || readings.length < 1 || readings.length > 2) {
     throw new MalformedModelOutput(`${where}.readings must hold one or two Readings`);
@@ -81,12 +85,14 @@ function parseFlag(value: unknown, where: string): ProposedFlag {
   if (typeof reachesSignerPersonally !== "boolean") {
     throw new MalformedModelOutput(`${where}.reachesSignerPersonally is not true or false`);
   }
-  return {
-    clauseType,
+  const body = {
     sourceSentences: parseSentences(sourceSentences, `${where}.sourceSentences`),
     readings: readings as string[],
     reachesSignerPersonally,
   };
+  if (clauseType !== "redLine") return { clauseType, ...body };
+  if (typeof redLineId !== "string") throw new MalformedModelOutput(`${where}.redLineId is not text`);
+  return { clauseType, redLineId, ...body };
 }
 
 // A list of quoted sentences, taken exactly as given: no trimming or other

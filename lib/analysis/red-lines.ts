@@ -11,6 +11,25 @@ export type RedLine =
 // A Red line of the catalog kind: a clause type the Signer will not accept.
 export type CatalogRedLine = Extract<RedLine, { kind: "catalog" }>;
 
+// A Red line in the Signer's own words, for a term the catalog does not
+// cover. It only ever adds flags.
+export type FreeTextRedLine = Extract<RedLine, { kind: "freeText" }>;
+
+// The longest free-text Red line, in characters. The screen and the server
+// refuse a longer one, and a longer stored row is skipped, so a Signer's own
+// words stay a short term rather than a page of instructions to the model.
+export const FREE_TEXT_MAX_LENGTH = 120;
+
+// The Signer's free-text Red lines, in the order given.
+export function freeTextRedLines(redLines: readonly RedLine[]): FreeTextRedLine[] {
+  return redLines.filter((redLine): redLine is FreeTextRedLine => redLine.kind === "freeText");
+}
+
+// The free-text Red line with this id, if one was passed in.
+export function freeTextRedLineById(id: string, redLines: readonly RedLine[]): FreeTextRedLine | undefined {
+  return freeTextRedLines(redLines).find((redLine) => redLine.id === id);
+}
+
 // The Signer's catalog Red line on a clause type, if they set one.
 export function catalogRedLineFor(
   clauseType: ClauseType,
@@ -26,10 +45,11 @@ export function catalogRedLineFor(
 // which Red line raised it. This can only raise. A Dangerous flag comes back
 // untouched, nothing here writes Caution, and every flag given comes back,
 // so no Red line, nor the lack of one, can hide or lower a Dangerous flag.
-// Free-text Red lines never raise anything.
+// Free-text Red lines never raise anything, and a flag a free-text Red line
+// added is never raised either: it comes back untouched.
 export function raiseByRedLines(flags: readonly RiskFlag[], redLines: readonly RedLine[]): RiskFlag[] {
   return flags.map((flag): RiskFlag => {
-    if (flag.severity === "Dangerous") return flag;
+    if (flag.clauseType === "redLine" || flag.severity === "Dangerous") return flag;
     const redLine = catalogRedLineFor(flag.clauseType, redLines);
     if (!redLine) return flag;
     return {

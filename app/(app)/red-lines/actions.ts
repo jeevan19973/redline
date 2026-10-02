@@ -6,11 +6,12 @@ import { isClauseType, type ClauseType } from "@/lib/analysis/index.ts";
 import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "../copy";
+import { checkFreeText } from "./free-text";
 
 // List, add, edit and remove the Signer's own Red lines (spec, "Server
-// operations"). Only the catalog kind is written here. A catalog value is
-// checked against the catalog, which lives in the Analysis module, before
-// it reaches the database. Changing a Red line never touches a stored
+// operations"), of both kinds. A catalog value is checked against the
+// catalog, which lives in the Analysis module, before it reaches the
+// database; a free-text value is trimmed and held to the length limit. Changing a Red line never touches a stored
 // Report: each Report keeps the snapshot it ran against.
 
 export type RedLineResult = { ok: true } | { ok: false; error: string };
@@ -29,9 +30,13 @@ async function signedIn() {
   return supabase;
 }
 
-function failure(what: string, error: { code?: string; message?: string }): RedLineResult {
-  // 23505: unique (owner, kind, value), so the type is already on the list.
-  if (error.code === "23505") return { ok: false, error: errors.duplicate };
+function failure(
+  what: string,
+  error: { code?: string; message?: string },
+  duplicate: string = errors.duplicate,
+): RedLineResult {
+  // 23505: unique (owner, kind, value), so the Red line is already on the list.
+  if (error.code === "23505") return { ok: false, error: duplicate };
   console.error(`Could not ${what} a Red line`, error.code, error.message);
   return { ok: false, error: errors.unexpected };
 }
@@ -69,7 +74,35 @@ export async function editRedLine(id: unknown, clauseType: unknown): Promise<Red
   return done();
 }
 
-// Removes one of the Signer's Red lines. Dangerous flags still show on
+const freeTextDuplicate = copy.redLines.freeText.errors.duplicate;
+
+// Adds a Red line in the Signer's own words.
+export async function addFreeTextRedLine(text: unknown): Promise<RedLineResult> {
+  const checked = checkFreeText(text);
+  if (!checked.ok) return checked;
+  const supabase = await signedIn();
+  const { error } = await supabase.from("red_lines").insert({ kind: "freeText", value: checked.text });
+  return error ? failure("add", error, freeTextDuplicate) : done();
+}
+
+// Rewords one of the Signer's free-text Red lines.
+export async function editFreeTextRedLine(id: unknown, text: unknown): Promise<RedLineResult> {
+  if (typeof id !== "string" || !UUID.test(id)) return { ok: false, error: errors.notFound };
+  const checked = checkFreeText(text);
+  if (!checked.ok) return checked;
+  const supabase = await signedIn();
+  const { data, error } = await supabase
+    .from("red_lines")
+    .update({ value: checked.text })
+    .eq("id", id)
+    .eq("kind", "freeText")
+    .select("id");
+  if (error) return failure("edit", error, freeTextDuplicate);
+  if (!data || data.length === 0) return { ok: false, error: errors.notFound };
+  return done();
+}
+
+// Removes one of the Signer's Red lines, of either kind. Dangerous flags still show on
 // every later report (the Severity floor); past reports are unchanged.
 export async function removeRedLine(id: unknown): Promise<RedLineResult> {
   if (typeof id !== "string" || !UUID.test(id)) return { ok: false, error: errors.notFound };
