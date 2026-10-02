@@ -4,9 +4,9 @@
 
 **Blocked by:** 01 (Sign in to an empty library), 04 (Risk flags with verified Source sentences), 17 (Invite-only sign-up with single-use codes)
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-**Needs from the owner before this is ready-for-agent:** the visual direction for the page. No DESIGN.md exists; run `/impeccable shape` on the landing page first.
+**Visual direction (settled 2026-10-01):** Depth of Reach, recorded in `DESIGN.md` and `.impeccable/design.json` from the built page in `landing/`, which passed Impeccable's finish review. This ticket ports `landing/` into the Next.js app at the site root, keeping its look, copy and self-hosted fonts. It does not redesign it. The placeholder sign-up and sign-in links become the real routes from tickets 01 and 17.
 
 - [ ] The page is served at the site root, without auth, and makes no model or database calls
 - [ ] It states what Underline does and who it is for: US small business owners and independent operators, before they sign a Commercial lease, a vendor or service contract, a freelance agreement or a vendor's terms of service
