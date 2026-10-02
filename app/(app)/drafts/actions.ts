@@ -22,7 +22,7 @@ import { readAllowance, releaseUse, reserveUse } from "../allowance";
 import { copy } from "../copy";
 import { listRedLines } from "../red-lines/store";
 import { isDraftId } from "./draft-id";
-import { reportStorageReady, saveReport } from "./report-store";
+import { claimAnalysis, clearAnalysisClaim, readReport, reportStorageReady, saveReport } from "./report-store";
 
 export type CreateDraftState = { error?: string };
 
@@ -105,9 +105,16 @@ export async function deleteDraft(draftId: unknown, then: unknown): Promise<Dele
   return { ok: true };
 }
 
-// `refusal` is the plain message when the analysis limit is reached, so the
-// page shows it instead of offering to try again.
-export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string };
+// `refusal` is a plain message for a run that was refused (the analysis
+// limit, or reports that can't be stored), so the page shows it instead of
+// offering to try again. `analyzing` means another run on this Draft is in
+// progress, from another tab say, so this one made no model call and the
+// page waits for that run instead.
+export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string; analyzing?: true };
+
+// "first" is the automatic analysis of a Draft with no report yet; "rerun"
+// is the Signer's explicit "Run analysis again".
+export type RunMode = "first" | "rerun";
 
 // Analyzes a stored Draft and stores its Report, replacing any earlier one.
 // Called from the Draft's page, both for the first analysis and for a re-run;
@@ -119,18 +126,25 @@ export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string };
 // A failure leaves any earlier Report in place. The page shows its own
 // message, so the result only says whether it worked, or why it was refused.
 //
+// Only one run at a time per Draft reaches the model: the run claims the
+// Draft first and clears the claim when it ends, success or failure. A
+// "first" run only analyzes a Draft that still has no report. If one exists
+// by the time it holds the claim (another tab finished first), the page is
+// re-rendered with that report and no model call is made. If the report
+// can't be read, it does not analyze either.
+//
 // Every analysis, first or re-run, counts against the Signer's one-time
-// limit (ADR 0007). The use is reserved here, in one atomic step, right
-// before the model call, and handed back if the call fails before the model
-// returns, so a failed call costs nothing and two requests at once cannot
-// overrun the limit.
+// limit (ADR 0007). The use is reserved here, in one atomic step, after the
+// claim and right before the model call, and handed back if the call fails
+// before the model returns, so a failed call costs nothing and two requests
+// at once cannot overrun the limit.
 //
 // The Report is stored with the secret key (report-store.ts). When that key
 // is missing, nothing runs: no model call is made for a Report that could
 // not be stored.
-export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> {
+export async function runAnalysis(draftId: unknown, mode: unknown): Promise<RunAnalysisResult> {
   if (!supabaseConfig()) redirect("/drafts/new");
-  if (!isDraftId(draftId)) return { ok: false };
+  if (!isDraftId(draftId) || (mode !== "first" && mode !== "rerun")) return { ok: false };
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
@@ -139,12 +153,6 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
   const owner = auth.claims.sub;
 
   if (!reportStorageReady()) return { ok: false, refusal: copy.analysis.storageUnavailable };
-
-  const allowance = await readAllowance(supabase);
-  if (!allowance) return { ok: false };
-  if (allowance.analysesLeft === 0) {
-    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
-  }
 
   // Row-level security returns nothing for another Signer's Draft.
   const { data: draft, error: loadError } = await supabase
@@ -155,6 +163,39 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
   if (loadError || !draft) {
     console.error("Could not load a Draft to analyze", loadError?.code, loadError?.message);
     return { ok: false };
+  }
+
+  const claim = await claimAnalysis(supabase, draft.id);
+  if (claim.kind === "held") return { ok: false, analyzing: true };
+  if (claim.kind === "error") return { ok: false };
+  try {
+    return await analyzeClaimed(supabase, owner, draft, mode);
+  } finally {
+    await clearAnalysisClaim(draft.id, claim);
+  }
+}
+
+// The part of runAnalysis that runs while it holds the Draft's claim.
+async function analyzeClaimed(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  owner: string,
+  draft: { id: string; extracted_text: string },
+  mode: RunMode,
+): Promise<RunAnalysisResult> {
+  if (mode === "first") {
+    const existing = await readReport(supabase, draft.id);
+    if (existing.kind === "error") return { ok: false };
+    if (existing.kind === "found") {
+      // Another run stored it first: show that one.
+      refresh();
+      return { ok: true };
+    }
+  }
+
+  const allowance = await readAllowance(supabase);
+  if (!allowance) return { ok: false };
+  if (allowance.analysesLeft === 0) {
+    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
   }
 
   // An analysis never runs as if the Signer had no Red lines when the list

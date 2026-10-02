@@ -249,3 +249,7 @@ code).
   call, in one atomic update, and hands it back if the call fails
   (`20261002160000_reserve_uses.sql`), so two requests at once can no longer
   overrun the limit. Only the secret key can change a count.
+- Fix 5: a failed report read shows an error and a "Try again" that reloads,
+  and never starts an analysis. A per-Draft claim
+  (`20261002170000_analysis_claims.sql`) lets only one run at a time reach
+  the model, so two tabs on a new Draft spend one analysis.

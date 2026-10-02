@@ -78,3 +78,29 @@ export async function saveReport(supabase: Supabase, draftId: string, report: Re
   if (error) console.error("Could not save a Report", error.code, error.message);
   return !error;
 }
+
+// One analysis at a time per Draft (20261002170000_analysis_claims.sql). A
+// run claims its Draft before it reserves a use or calls the model, and
+// clears the claim when it ends, success or failure. "held" means another
+// run on this Draft is in progress, so this one must not call the model.
+export type AnalysisClaim = { kind: "claimed"; token: string } | { kind: "held" } | { kind: "error" };
+
+export async function claimAnalysis(supabase: Supabase, draftId: string): Promise<AnalysisClaim> {
+  const admin = adminClient();
+  if (!admin || !(await ownsDraft(supabase, draftId))) return { kind: "error" };
+  const { data, error } = await admin.rpc("claim_analysis", { p_draft: draftId });
+  if (error) {
+    console.error("Could not claim a Draft for analysis", error.code, error.message);
+    return { kind: "error" };
+  }
+  return typeof data === "string" ? { kind: "claimed", token: data } : { kind: "held" };
+}
+
+// Clears a run's own claim. If this fails the claim goes stale after five
+// minutes and the next run takes it over.
+export async function clearAnalysisClaim(draftId: string, claim: { token: string }): Promise<void> {
+  const admin = adminClient();
+  if (!admin) return;
+  const { error } = await admin.rpc("clear_analysis_claim", { p_draft: draftId, p_token: claim.token });
+  if (error) console.error("Could not clear a Draft's analysis claim", error.code, error.message);
+}

@@ -13,13 +13,18 @@ import { draftDate } from "../draft-date";
 import { isDraftId } from "../draft-id";
 import { DraftReading } from "../draft-reading";
 import { readReport } from "../report-store";
-import { AnalysisRunner } from "./analysis-runner";
+import { AnalysisRunner, ReportReadError } from "./analysis-runner";
 
 type Draft = { id: string; title: string; extracted_text: string; created_at: string };
 
-// The Draft's stored Report: none yet, one that reads back cleanly, or a row
-// whose JSON is not a well-formed Report.
-type StoredState = { kind: "none" } | { kind: "report"; report: StoredReport } | { kind: "unreadable" };
+// The Draft's stored Report: none yet, one that reads back cleanly, a row
+// whose JSON is not a well-formed Report, or a read that failed, which says
+// nothing about whether a report exists.
+type StoredState =
+  | { kind: "none" }
+  | { kind: "report"; report: StoredReport }
+  | { kind: "unreadable" }
+  | { kind: "readError" };
 
 // One Draft by id, or null. The query does not filter by owner: row-level
 // security returns nothing for another Signer's Draft, which then reads as
@@ -39,7 +44,8 @@ const getDraft = cache(async (id: string): Promise<Draft | null> => {
 // The Draft's current Report, read only for the Draft's owner (report-store.ts).
 async function getReport(draftId: string): Promise<StoredState> {
   const read = await readReport(await createClient(), draftId);
-  if (read.kind !== "found") return { kind: "none" };
+  if (read.kind === "error") return { kind: "readError" };
+  if (read.kind === "none") return { kind: "none" };
   const report = readStoredReport(read.report, { showConfidence: showConfidence() });
   return report ? { kind: "report", report } : { kind: "unreadable" };
 }
@@ -77,11 +83,26 @@ export default async function DraftPage({ params }: Props) {
         textTitle={copy.draft.textTitle}
         textIntro={copy.draft.textIntro}
         report={stored.kind === "report" ? stored.report : null}
-        actions={<AnalysisRunner draftId={draft.id} mode="rerun" />}
+        // Keyed on the report, so a new one resets the runner.
+        actions={
+          <AnalysisRunner
+            key={stored.kind === "report" ? stored.report.createdAt : "none"}
+            draftId={draft.id}
+            mode="rerun"
+          />
+        }
         showRedLines
         // Only the Draft's id is bound: the action loads the stored text.
         ask={askAboutDraft.bind(null, draft.id)}
-        pending={<AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />}
+        // Only a Draft known to have no report starts its first analysis. A
+        // failed read never does: it offers to load the page again.
+        pending={
+          stored.kind === "readError" ? (
+            <ReportReadError />
+          ) : (
+            <AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />
+          )
+        }
       />
     </article>
   );
