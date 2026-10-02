@@ -50,6 +50,23 @@ export const copy = {
     textTitle: "The text Underline saved",
     textIntro: "Underline saved this exact text for this Draft. Check it's the document you meant.",
   },
+  // Deleting a Draft from the library or its own page, after a confirmation.
+  deleteDraft: {
+    trigger: "Delete",
+    title: (title: string) => `Delete "${title}"?`,
+    body: "Underline will delete this Draft's text and its report. You can't get them back.",
+    confirm: "Delete Draft",
+    pending: "Deleting",
+    cancel: "Cancel",
+    deleted: (title: string) => `Deleted "${title}".`,
+    // On the library after deleting from the Draft's page, where the title
+    // is not carried over.
+    deletedOne: "Deleted the Draft.",
+    errors: {
+      notFound: "That Draft is already gone. Reload the page to see your library.",
+      unexpected: "Something went wrong on our end, so the Draft is still here. Try again.",
+    },
+  },
   report: {
     title: "Report",
     analyzed: "Analyzed",

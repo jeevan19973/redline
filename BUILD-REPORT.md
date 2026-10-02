@@ -21,6 +21,7 @@ stops early. The final section lists what to run first.
 | 06 Counter-offers and Non-negotiable clauses | done | 149 tests. Non-negotiable basis must be a verified quote; Copy button not clicked in a real browser |
 | 05 Confidence label behind a switch | done | 163 tests. Switch is UNDERLINE_SHOW_CONFIDENCE=true, off by default |
 | 10 Question box answered only from the document | done | 189 tests. One model call per question, no regeneration; 500-character limit |
+| 11 Delete a Draft | done | Delete and cascade checked in a rolled-back transaction; dialog checked in headless Chrome |
 
 ## Decisions made in your absence
 

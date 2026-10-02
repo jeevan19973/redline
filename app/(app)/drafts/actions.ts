@@ -64,6 +64,39 @@ export async function createDraft(title: unknown, text: unknown): Promise<Create
   redirect(`/drafts/${data.id}`);
 }
 
+export type DeleteDraftResult = { ok: true } | { ok: false; error: string };
+
+// Deletes one of the signed-in Signer's Drafts by id. The query does not
+// filter by owner and uses the Signer's own session, never a privileged key:
+// row-level security matches no row for another Signer's Draft, which then
+// reads as not found. The Draft's report goes with it (on delete cascade), so
+// Underline keeps nothing of it.
+//
+// From the library the page re-renders without the row. From the Draft's own
+// page (`then` is "library") it goes to the library with a confirmation line
+// instead, since the Draft's page no longer exists.
+export async function deleteDraft(draftId: unknown, then: unknown): Promise<DeleteDraftResult> {
+  const errors = copy.deleteDraft.errors;
+  if (!supabaseConfig()) redirect("/library");
+  if (!isDraftId(draftId)) return { ok: false, error: errors.notFound };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims) redirect("/sign-in");
+
+  const { data, error } = await supabase.from("drafts").delete().eq("id", draftId).select("id");
+  if (error) {
+    console.error("Could not delete a Draft", error.code, error.message);
+    return { ok: false, error: errors.unexpected };
+  }
+  if (!data || data.length === 0) return { ok: false, error: errors.notFound };
+
+  revalidatePath("/library");
+  revalidatePath(`/drafts/${draftId}`);
+  if (then === "library") redirect("/library?deleted=1");
+  return { ok: true };
+}
+
 export type RunAnalysisResult = { ok: boolean };
 
 // Analyzes a stored Draft and stores its Report, replacing any earlier one.
