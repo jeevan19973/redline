@@ -41,8 +41,8 @@ export const GUARANTY_GAP =
 export const DOES_NOT_SAY =
   "This document doesn't say. Underline found nothing in this text that answers your question.";
 
-// Every piece of fixed copy, by name, for the banned-claims test. Ticket 16
-// adds the landing page copy here.
+// Every piece of fixed copy in a report, by name, for the banned-claims
+// test. The landing page's copy lives with the page; the test reads both.
 export const FIXED_COPY: Readonly<Record<string, string>> = Object.freeze({
   scopeStamp: SCOPE_STAMP,
   doesNotSay: DOES_NOT_SAY,

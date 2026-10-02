@@ -2,8 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseConfig } from "@/lib/env";
 
+// The landing page is static and makes no auth call on the server (ticket
+// 16), so the proxy leaves it alone; the page reads the session in the browser.
+const UNTOUCHED_PATHS = ["/"];
 // Pages a signed-out visitor may open. Everything else needs a session.
-const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up"];
+const PUBLIC_PATHS = ["/sign-in", "/sign-up"];
 // Pages a signed-in Signer has no reason to see.
 const SIGNED_OUT_ONLY_PATHS = ["/sign-in", "/sign-up"];
 
@@ -13,7 +16,7 @@ const SIGNED_OUT_ONLY_PATHS = ["/sign-in", "/sign-up"];
 // untouched and the pages themselves say accounts are not set up.
 export async function updateSession(request: NextRequest) {
   const config = supabaseConfig();
-  if (!config) return NextResponse.next({ request });
+  if (!config || UNTOUCHED_PATHS.includes(request.nextUrl.pathname)) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
 

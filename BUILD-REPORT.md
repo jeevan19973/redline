@@ -25,6 +25,7 @@ stops early. The final section lists what to run first.
 | 12 PDF and DOCX upload, with scanned-file refusal | done | Real pdfjs/mammoth exercised in headless Chrome; signed-in form not run |
 | 17 Invite-only sign-up with single-use codes | done | Trigger checked in a rolled-back transaction; real sign-up not run. Every new account, even one made in Studio, needs a code |
 | 18 One-time limit per Signer | done | Limits checked in a rolled-back transaction; rail not seen on screen. Fails closed |
+| 16 Public landing page | done | 345 tests. Static at /. One exact-sentence exemption in the banned-claims test |
 
 ## Decisions made in your absence
 
@@ -99,3 +100,39 @@ stops early. The final section lists what to run first.
     so). Accounts that already exist in your local database are untouched. The
     owner script `npm run invite:create -- 5` needs `SUPABASE_SECRET_KEY` in
     `.env.local`; the app itself never reads that key.
+
+## Real-model smoke run
+
+`npm run smoke` ran once against the real model on 2026-10-02, using the key
+in `.env.local`. Model reported: `z-ai/glm-5.3-flash`, through Fireworks with
+fallbacks off.
+
+- **Flags proposed: 8. Survived citation verification: 8. Citation failures: 0.**
+- All 8 planted sentences in `tests/fixtures/adhesion-contract.txt` were
+  quoted verbatim at the expected severity: uncapped indemnity and the
+  individual non-compete as Dangerous; auto-renewal, late fees, unilateral
+  amendment, arbitration with class waiver, and deposit and repairs as Caution.
+  The model merged the two deposit-and-repairs sentences into one flag that
+  cites both.
+- One extra flag: **personal guarantee, Dangerous**, citing the Principal
+  joinder sentence and the sentence that refers to the separate Guaranty of
+  Lease. ADR 0004 allows over-flagging in the Dangerous tier, but its Reading
+  ("your own assets stand behind everything the business owes") describes a
+  guaranty document Underline never saw. Worth a prompt look: the guaranty gap
+  already covers this case.
+- Every flag came back **Non-negotiable**, citing the lease's "not subject to
+  negotiation or modification" sentence, so no Counter-offer was produced. This
+  follows the rule, but it means Counter-offer wording was not exercised
+  against the real model.
+- The guaranty gap appeared with its verified sentence. No Clean verdict, as
+  expected. The scope stamp was present. Confidence was "high" on all 8, which
+  is why it stays hidden until calibration.
+- The summary stayed within the text.
+15. **Landing page (ticket 16).** Ported from `landing/` without a redesign.
+    Three copy changes, each one required by the ticket: the opening says who
+    it is for, the meta description says "commercial lease", and the data note
+    says "third-party AI model provider". The page says "It never tells you a
+    document is safe to sign." The banned-claims test exempts that one
+    sentence, word for word, and tests prove that any edit to it, or a claim
+    added beside it, still fails. `landing/` is left in place as the reference
+    original; delete it when you're satisfied with the port.

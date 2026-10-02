@@ -347,6 +347,8 @@ button, input { font: inherit; }
   text-transform: uppercase;
 }
 
+.not-found__link { margin-top: 24px; }
+
 .pane__intro {
   max-width: 60ch;
   margin-top: 14px;

@@ -9,9 +9,11 @@ export function AccountsUnavailable() {
     <>
       <header className="topbar">
         <div className="wrap topbar__inner">
-          <Link className="wordmark" href="/" aria-label="Underline, home">
+          {/* A plain anchor: the landing page has its own stylesheet, so going
+              there is a full page load rather than a client-side navigation. */}
+          <a className="wordmark" href="/" aria-label="Underline, home">
             Underline
-          </Link>
+          </a>
         </div>
       </header>
       <main id="main" className="auth">

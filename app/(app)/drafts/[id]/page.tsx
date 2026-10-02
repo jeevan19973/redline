@@ -5,6 +5,7 @@ import { readStoredReport, type StoredReport } from "@/lib/analysis/index.ts";
 import { showConfidence, supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsUnavailable } from "../../../_accounts-unavailable/notice";
+import { copy as notFoundCopy } from "../../../_not-found/copy";
 import { copy } from "../../copy";
 import { askAboutDraft } from "../actions";
 import { DeleteDraft } from "../delete-draft";
@@ -52,7 +53,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const draft = await getDraft((await params).id);
-  return draft ? { title: draft.title } : {};
+  return { title: draft ? draft.title : notFoundCopy.title };
 }
 
 export default async function DraftPage({ params }: Props) {
