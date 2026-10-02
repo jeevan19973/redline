@@ -30,12 +30,33 @@ try {
   });
 
   const failures = report.citationFailures;
-  console.log(`\nFlags proposed: ${report.riskFlags.length + failures.length}`);
+  const flagFailures = failures.filter((failure) => "flag" in failure);
+  console.log(`\nFlags proposed: ${report.riskFlags.length + flagFailures.length}`);
   console.log(`Flags that passed citation verification: ${report.riskFlags.length}`);
   console.log(`Citation failures (withheld, never shown to the Signer): ${failures.length}`);
   for (const failure of failures) {
-    console.log(`\n- ${failure.flag.clauseType}, after ${failure.attempts} attempts`);
+    const what = "flag" in failure ? failure.flag.clauseType : "guaranty gap";
+    console.log(`\n- ${what}, after ${failure.attempts} attempts`);
     for (const sentence of failure.failedSentences) console.log(`   Not in the text: ${JSON.stringify(sentence)}`);
+  }
+
+  if (report.guarantyGap) {
+    const { statement, sourceSentence } = report.guarantyGap;
+    console.log(`\nGuaranty gap:\n${statement}`);
+    console.log(`   Source sentence at offset ${sourceSentence.offset}: ${JSON.stringify(sourceSentence.text)}`);
+  } else {
+    console.log("\nGuaranty gap: none");
+  }
+
+  if (report.cleanVerdict) {
+    const { title, statement, notes, checked } = report.cleanVerdict;
+    console.log(`\nClean verdict: ${title}\n${statement}`);
+    for (const note of notes) console.log(note);
+    for (const line of checked) {
+      console.log(`   ${clauseTypeLabel(line.clauseType)}: ${line.checked ? "checked" : "not checked"}`);
+    }
+  } else {
+    console.log("\nClean verdict: none");
   }
 
   console.log(`\nScope stamp:\n${report.scopeStamp}`);

@@ -128,7 +128,7 @@ describe("analyzeDraft: citation verification", () => {
 
     expect(report.riskFlags).toEqual([]);
     expect(report.citationFailures).toHaveLength(1);
-    expect(report.citationFailures[0].flag.sourceSentences).toEqual([repairs.sentence, wrong]);
+    expect(report.citationFailures[0]).toHaveProperty("flag.sourceSentences", [repairs.sentence, wrong]);
     expect(report.citationFailures[0].failedSentences).toEqual([wrong]);
   });
 

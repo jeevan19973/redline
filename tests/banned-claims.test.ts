@@ -1,32 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { FIXED_COPY } from "../lib/analysis/index.ts";
+import { bannedClaimsIn } from "./support/banned-claims.ts";
 
 // The one test outside the Analysis module's behavior (spec, Testing
 // Decisions): no fixed copy may say a document is safe to sign, or compare
 // Underline to a lawyer. It reads the Analysis module's registry of fixed
-// copy, so copy added there is checked without touching this file.
-
-const BANNED: readonly RegExp[] = [
-  // "Safe to sign" and its equivalents.
-  /\b(safe|safer|okay|ok|fine|good|ready|clear|cleared|alright|all right)\s+(to|for)\s+(sign|signing|signature)\b/i,
-  /\bsafe(ly)?\b/i,
-  /\bapprov(e|ed|es|al|ing)\b/i,
-  /\ball[\s-]clear\b/i,
-  /\bno (issues|problems|risks?)\b/i,
-  /\bnothing to worry\b/i,
-  /\bgo ahead and sign\b/i,
-  // Any comparison to a lawyer.
-  /\blawyers?\b/i,
-  /\battorneys?\b/i,
-  /\bcounsel(or|ors|s)?\b/i,
-  /\blaw firms?\b/i,
-  /\bparalegals?\b/i,
-  /\blegal (review|opinion)\b/i,
-];
-
-function bannedClaimsIn(text: string): string[] {
-  return BANNED.filter((pattern) => pattern.test(text)).map((pattern) => pattern.source);
-}
+// copy, so copy added there is checked without touching this file. The
+// patterns live in tests/support/banned-claims.ts, which the Clean verdict
+// tests also use on the verdicts analyzeDraft returns.
 
 describe("banned claims", () => {
   it("has fixed copy to check", () => {

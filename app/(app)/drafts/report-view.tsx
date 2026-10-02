@@ -1,4 +1,10 @@
-import { clauseTypeLabel, type RiskFlag, type StoredReport } from "@/lib/analysis/index.ts";
+import {
+  clauseTypeLabel,
+  type CleanVerdict,
+  type GuarantyGap,
+  type RiskFlag,
+  type StoredReport,
+} from "@/lib/analysis/index.ts";
 import { copy } from "../copy";
 import { draftDate } from "./draft-date";
 
@@ -17,8 +23,8 @@ export type FlagLinking = {
   showInText: (id: string) => void;
 };
 
-// One Report on paper: the summary, the ranked Risk flags, then the scope
-// stamp. Holds no state of its own; DraftReading passes in the linking to
+// One Report on paper: the guaranty gap and the Clean verdict when there are
+// any, the summary, the ranked Risk flags, then the scope stamp. Holds no state of its own; DraftReading passes in the linking to
 // the Draft text. `actions` sits under the heading, for the re-run control.
 export function ReportView({
   report,
@@ -30,6 +36,10 @@ export function ReportView({
   linking: FlagLinking;
 }) {
   const paragraphs = report.summary.split(/\n\s*\n/).filter((paragraph) => paragraph.trim());
+  // The guaranty gap's place in the linking, after the flags.
+  const gapIndex = report.riskFlags?.length ?? 0;
+  // With a Clean verdict and nothing flagged, the verdict says it all.
+  const showFlags = !(report.cleanVerdict && report.riskFlags?.length === 0);
 
   return (
     <section className="report" aria-labelledby="report-title">
@@ -45,6 +55,10 @@ export function ReportView({
         {actions && <div className="report__actions">{actions}</div>}
       </header>
 
+      {report.guarantyGap && <GuarantyGapNotice gap={report.guarantyGap} index={gapIndex} linking={linking} />}
+
+      {report.cleanVerdict && <CleanVerdictCard verdict={report.cleanVerdict} />}
+
       <section className="report__part" aria-labelledby="report-summary-title">
         <h3 className="report__part-title" id="report-summary-title">
           {text.summaryTitle}
@@ -56,28 +70,31 @@ export function ReportView({
         </div>
       </section>
 
-      <section className="report__part" aria-labelledby="report-flags-title">
-        <h3 className="report__part-title" id="report-flags-title">
-          {text.flags.title}
-        </h3>
-        {report.riskFlags === undefined ? (
-          // A Report stored before Risk flags existed was never checked for them.
-          <p className="flags__note">{text.flags.olderReport}</p>
-        ) : report.riskFlags.length === 0 ? (
-          <p className="flags__note">{text.flags.none}</p>
-        ) : (
-          <>
-            <p className="flags__legend">{text.flags.legend}</p>
-            <ol className="flags">
-              {report.riskFlags.map((flag, index) => (
-                <li key={index}>
-                  <FlagSlate flag={flag} index={index} linking={linking} />
-                </li>
-              ))}
-            </ol>
-          </>
-        )}
-      </section>
+      {showFlags && (
+        <section className="report__part" aria-labelledby="report-flags-title">
+          <h3 className="report__part-title" id="report-flags-title">
+            {text.flags.title}
+          </h3>
+          {report.riskFlags === undefined ? (
+            // A Report stored before Risk flags existed was never checked for them.
+            <p className="flags__note">{text.flags.olderReport}</p>
+          ) : report.riskFlags.length === 0 ? (
+            // A Report stored before the Clean verdict existed.
+            <p className="flags__note">{text.flags.none}</p>
+          ) : (
+            <>
+              <p className="flags__legend">{text.flags.legend}</p>
+              <ol className="flags">
+                {report.riskFlags.map((flag, index) => (
+                  <li key={index}>
+                    <FlagSlate flag={flag} index={index} linking={linking} />
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+        </section>
+      )}
 
       <section className="report__part report__scope" aria-labelledby="report-scope-title">
         <h3 className="report__part-title" id="report-scope-title">
@@ -85,6 +102,80 @@ export function ReportView({
         </h3>
         <p>{report.scopeStamp}</p>
       </section>
+    </section>
+  );
+}
+
+// The guaranty gap, on paper near the top: the fixed statement that the
+// Signer's personal exposure under the separate guaranty was not checked,
+// then the sentence that refers to it, underlined in ink like any Source
+// sentence. No severity color: it is not a Risk flag.
+function GuarantyGapNotice({ gap, index, linking }: { gap: GuarantyGap; index: number; linking: FlagLinking }) {
+  const target = linking.targets[index]?.[0] ?? null;
+  const lit = linking.lit.includes(index);
+  return (
+    <section
+      id="guaranty-gap"
+      className={`gap${lit ? " is-lit" : ""}`}
+      aria-labelledby="guaranty-gap-name"
+      tabIndex={-1}
+      onMouseEnter={() => linking.light(index)}
+      onMouseLeave={() => linking.light(null)}
+      onFocus={() => linking.light(index)}
+      onBlur={() => linking.light(null)}
+    >
+      <h3 className="gap__title" id="guaranty-gap-name">
+        {text.guarantyGap.title}
+      </h3>
+      <p className="gap__statement">{gap.statement}</p>
+      <div className="flag__source">
+        <blockquote className="flag__quote">
+          <p>{gap.sourceSentence.text}</p>
+        </blockquote>
+        {target && (
+          <a
+            className="flag__cite"
+            href={`#${target}`}
+            onClick={(event) => {
+              event.preventDefault();
+              linking.showInText(target);
+            }}
+          >
+            {text.flags.showInText}
+          </a>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// The Clean verdict: calm gray on pale gray, never green, no checkmark (ADR
+// 0006). Its wording is the Analysis module's fixed template; each catalog
+// clause type is listed with "Checked" or "Not checked" in words.
+function CleanVerdictCard({ verdict }: { verdict: CleanVerdict }) {
+  return (
+    <section className="verdict" aria-labelledby="verdict-title">
+      <h3 className="verdict__title" id="verdict-title">
+        {verdict.title}
+      </h3>
+      <p className="verdict__text">{verdict.statement}</p>
+      {verdict.notes.map((note, index) => (
+        <p className="verdict__text" key={index}>
+          {note}
+        </p>
+      ))}
+      <h4 className="verdict__label" id="verdict-list-title">
+        {text.verdict.listTitle}
+      </h4>
+      <ul className="verdict__list" aria-labelledby="verdict-list-title">
+        {verdict.checked.map((line) => (
+          <li key={line.clauseType} className={line.checked ? undefined : "is-unchecked"}>
+            <span className="verdict__clause">{clauseTypeLabel(line.clauseType)}</span>
+            <span className="visually-hidden">: </span>
+            <span className="verdict__status">{line.checked ? text.verdict.checked : text.verdict.notChecked}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

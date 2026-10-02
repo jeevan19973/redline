@@ -125,7 +125,11 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
     const report = await analyzeDraft(text, [], openRouterClient());
     // Citation failures stay on the server: they are never shown to the Signer.
     for (const failure of report.citationFailures) {
-      console.error("Withheld a Risk flag whose Source sentences failed verification", failure.flag.clauseType);
+      if ("flag" in failure) {
+        console.error("Withheld a Risk flag whose Source sentences failed verification", failure.flag.clauseType);
+      } else {
+        console.error("Withheld the guaranty gap, whose Source sentence failed verification");
+      }
     }
     return { report: displayReport(report) };
   } catch (error) {

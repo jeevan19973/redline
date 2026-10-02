@@ -15,6 +15,7 @@ stops early. The final section lists what to run first.
 | 02 Upload a plain-text file or paste text as a Draft | done | RLS checked in a rolled-back transaction; save flow not run in a browser (migration not applied). Body limit 2 MB; dates in UTC |
 | 03 First report: summary and scope stamp | done | 26 tests. reports RLS checked in a rolled-back transaction; Draft-page flow not run in a browser |
 | 04 Risk flags with verified Source sentences | done | 60 tests. Screen checked in headless Chrome via a temporary route. Clause labels want your read |
+| 07 Clean verdict and guaranty gap | done | 103 tests. No Clean verdict when a withheld flag would have been Dangerous |
 
 ## Decisions made in your absence
 
@@ -73,3 +74,11 @@ stops early. The final section lists what to run first.
     owe you") are agent wording that went through the humanizer; they deserve
     your read. Hedging in Readings is asked for in the prompt but not checked
     in code.
+13. **Clean verdict (ticket 07).** Beyond the spec: no Clean verdict appears
+    when a flag that would have been Dangerous was withheld for a failed
+    citation, so a personal guarantee whose quotation failed can never produce
+    "no Dangerous clause found". When the guaranty-reference sentence fails
+    verification twice, nothing unverified is shown and the verdict marks
+    personal guarantee not checked, saying Underline couldn't rule out a
+    separate guaranty. The banned-claims matcher rejects any "safe" and any
+    "lawyer" or "attorney" in fixed copy, which is deliberately broad.

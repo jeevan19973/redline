@@ -5,11 +5,14 @@ import type { ProposedFlag } from "./report.ts";
 // nothing, so anything that does not match what the prompt asked for fails
 // the whole analysis: a partial Report is never returned. Whether a Source
 // sentence is really in the text is not checked here; that is citation
-// verification, in verify.ts.
+// verification, in citations.ts.
 
 export type ModelAnalysis = {
   summary: string;
   riskFlags: ProposedFlag[];
+  // The sentence the model quoted as referring to a separate guaranty, or
+  // null when it reported no such reference.
+  guarantyReference: string | null;
 };
 
 export class MalformedModelOutput extends Error {
@@ -20,11 +23,40 @@ export class MalformedModelOutput extends Error {
 }
 
 export function parseAnalysis(data: unknown): ModelAnalysis {
-  const { summary, riskFlags } = asObject(data, "the output");
+  const { summary, riskFlags, guarantyReference } = asObject(data, "the output");
   if (typeof summary !== "string") throw new MalformedModelOutput("summary is missing or not text");
   if (!summary.trim()) throw new MalformedModelOutput("summary is empty");
   if (!Array.isArray(riskFlags)) throw new MalformedModelOutput("riskFlags is missing or not a list");
-  return { summary, riskFlags: riskFlags.map((flag, index) => parseFlag(flag, `riskFlags[${index}]`)) };
+  return {
+    summary,
+    riskFlags: riskFlags.map((flag, index) => parseFlag(flag, `riskFlags[${index}]`)),
+    guarantyReference: parseGuarantyReference(guarantyReference),
+  };
+}
+
+// Whether the text refers to a separate guaranty, and the sentence that does.
+// The sentence is taken exactly as given; a blank one, when the model says
+// there is a reference, fails verification later rather than here. A
+// sentence given alongside "no reference" is ignored.
+function parseGuarantyReference(value: unknown): string | null {
+  const { refersToSeparateGuaranty, sourceSentence } = asObject(value, "guarantyReference");
+  if (typeof refersToSeparateGuaranty !== "boolean") {
+    throw new MalformedModelOutput("guarantyReference.refersToSeparateGuaranty is not true or false");
+  }
+  if (typeof sourceSentence !== "string") {
+    throw new MalformedModelOutput("guarantyReference.sourceSentence is not text");
+  }
+  return refersToSeparateGuaranty ? sourceSentence : null;
+}
+
+// The answer to the guaranty sentence's regeneration request. An empty string
+// is the model saying it cannot find it, which verification then rejects.
+export function parseGuarantyRequote(data: unknown): string {
+  const { sourceSentence } = asObject(data, "the regeneration");
+  if (typeof sourceSentence !== "string") {
+    throw new MalformedModelOutput("the regeneration's sourceSentence is not text");
+  }
+  return sourceSentence;
 }
 
 // The answer to a regeneration request: the flag's Source sentences, quoted

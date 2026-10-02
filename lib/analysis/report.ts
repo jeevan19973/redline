@@ -34,7 +34,7 @@ export type ProposedFlag = {
 
 // A flag withheld because a Source sentence failed verification, even after
 // a regeneration. For the maintainer and evals; never shown to the Signer.
-export type CitationFailure = {
+export type FlagCitationFailure = {
   // The flag as the model first proposed it.
   readonly flag: ProposedFlag;
   // The sentences from the last attempt that are not in the stored text.
@@ -44,13 +44,57 @@ export type CitationFailure = {
   readonly attempts: number;
 };
 
-// What a Report holds. Later tickets add Confidence, Counter-offers, the
-// Clean verdict and the guaranty gap.
+// The guaranty gap's sentence, withheld because it failed verification even
+// after a regeneration. The model still reported a reference to a separate
+// guaranty, so the Clean verdict marks personal guarantee not checked.
+export type GuarantyCitationFailure = {
+  // The sentence as the model first quoted it.
+  readonly guarantyReference: { readonly sourceSentence: string };
+  readonly failedSentences: readonly string[];
+  readonly attempts: number;
+};
+
+export type CitationFailure = FlagCitationFailure | GuarantyCitationFailure;
+
+// The text refers to a separate guaranty, which Underline never saw, so the
+// Signer's personal exposure under it was not checked (ADR 0003).
+export type GuarantyGap = {
+  // Fixed template text, never model output.
+  readonly statement: string;
+  // The sentence that refers to the guaranty, verified like a flag's.
+  readonly sourceSentence: SourceSentence;
+};
+
+// One line of the Clean verdict's list: a catalog clause type and whether
+// it was checked. Every type is checked except personal guarantee under a
+// guaranty gap.
+export type CheckedClause = {
+  readonly clauseType: ClauseType;
+  readonly checked: boolean;
+};
+
+// The result for a Draft with no Dangerous flag (ADR 0004). Its wording is
+// fixed template text, never model output; it describes the text only.
+export type CleanVerdict = {
+  readonly title: string;
+  readonly statement: string;
+  // Extra template sentences that apply to this Report, in order.
+  readonly notes: readonly string[];
+  // The whole fixed catalog, in catalog order.
+  readonly checked: readonly CheckedClause[];
+};
+
+// What a Report holds. Later tickets add Confidence and Counter-offers.
 export type ReportContent = {
   readonly summary: string;
   // Dangerous first, then by the offset of each flag's first Source sentence.
   readonly riskFlags: readonly RiskFlag[];
   readonly citationFailures: readonly CitationFailure[];
+  // Present only when no flag is Dangerous.
+  readonly cleanVerdict?: CleanVerdict;
+  // Present only when the text refers to a separate guaranty and the
+  // sentence that does so passed verification.
+  readonly guarantyGap?: GuarantyGap;
   readonly scopeStamp: string;
   readonly redLinesSnapshot: readonly RedLine[];
   // The model that wrote the analysis, as the model client reported it.
@@ -92,16 +136,59 @@ export function displayReport(report: Report): StoredReport {
 // stored JSON is not trusted). Citation failures are dropped.
 export function readStoredReport(value: unknown): StoredReport | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const { summary, riskFlags, scopeStamp, redLinesSnapshot, modelId, createdAt } = value as Record<string, unknown>;
+  const { summary, riskFlags, cleanVerdict, guarantyGap, scopeStamp, redLinesSnapshot, modelId, createdAt } =
+    value as Record<string, unknown>;
   if (typeof summary !== "string" || !summary.trim()) return null;
   if (typeof scopeStamp !== "string" || !scopeStamp.trim()) return null;
   if (!Array.isArray(redLinesSnapshot) || !redLinesSnapshot.every(isRedLine)) return null;
   if (typeof modelId !== "string" || !modelId) return null;
   if (typeof createdAt !== "string" || Number.isNaN(Date.parse(createdAt))) return null;
-  const base = { summary, scopeStamp, redLinesSnapshot, modelId, createdAt };
+  // Both are absent on a Report stored before they existed, and on one
+  // where they do not apply.
+  if (cleanVerdict !== undefined && !isCleanVerdict(cleanVerdict)) return null;
+  if (guarantyGap !== undefined && !isGuarantyGap(guarantyGap)) return null;
+  const base: StoredReport = {
+    summary,
+    ...(cleanVerdict !== undefined && { cleanVerdict }),
+    ...(guarantyGap !== undefined && { guarantyGap }),
+    scopeStamp,
+    redLinesSnapshot,
+    modelId,
+    createdAt,
+  };
   if (riskFlags === undefined) return base;
   if (!Array.isArray(riskFlags) || !riskFlags.every(isRiskFlag)) return null;
   return { ...base, riskFlags };
+}
+
+function isCleanVerdict(value: unknown): value is CleanVerdict {
+  if (typeof value !== "object" || value === null) return false;
+  const { title, statement, notes, checked } = value as Record<string, unknown>;
+  return (
+    isText(title) &&
+    isText(statement) &&
+    Array.isArray(notes) &&
+    notes.every(isText) &&
+    Array.isArray(checked) &&
+    checked.length > 0 &&
+    checked.every(isCheckedClause)
+  );
+}
+
+function isCheckedClause(value: unknown): value is CheckedClause {
+  if (typeof value !== "object" || value === null) return false;
+  const { clauseType, checked } = value as Record<string, unknown>;
+  return isClauseType(clauseType) && typeof checked === "boolean";
+}
+
+function isGuarantyGap(value: unknown): value is GuarantyGap {
+  if (typeof value !== "object" || value === null) return false;
+  const { statement, sourceSentence } = value as Record<string, unknown>;
+  return isText(statement) && isSourceSentence(sourceSentence);
+}
+
+function isText(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
 }
 
 function isRiskFlag(value: unknown): value is RiskFlag {

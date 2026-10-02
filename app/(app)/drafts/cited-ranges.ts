@@ -1,14 +1,20 @@
-import type { RiskFlag } from "@/lib/analysis/index.ts";
+import type { SourceSentence } from "@/lib/analysis/index.ts";
 
 // Where each Risk flag's Source sentences sit in the Draft text, so the
 // text can underline them in place and each flag can link to its sentences.
+// The guaranty gap's sentence is placed the same way, as one more entry
+// after the flags.
+
+// Anything in a report that quotes the text: a Risk flag or the guaranty gap.
+export type Citing = { readonly sourceSentences: readonly SourceSentence[] };
 
 export type CitedRange = {
   // The element id of the underlined range in the text.
   readonly id: string;
   readonly start: number;
   readonly end: number;
-  // Indexes of the flags (in display order) that quote text in this range.
+  // Indexes of the entries (flags in display order, then the guaranty gap)
+  // that quote text in this range.
   readonly flags: readonly number[];
 };
 
@@ -20,7 +26,7 @@ export type CitedText = {
   readonly targets: readonly (readonly (string | null)[])[];
 };
 
-export function citedText(text: string, flags: readonly RiskFlag[]): CitedText {
+export function citedText(text: string, flags: readonly Citing[]): CitedText {
   // A stored Report is not trusted (readStoredReport), so a sentence is only
   // placed when the text really holds it at its offset.
   const spans = flags.flatMap((flag, flagIndex) =>

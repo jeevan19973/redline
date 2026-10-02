@@ -1,16 +1,22 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import type { RiskFlag, StoredReport } from "@/lib/analysis/index.ts";
+import type { StoredReport } from "@/lib/analysis/index.ts";
 import { copy } from "../copy";
-import { citedText } from "./cited-ranges";
+import { citedText, type Citing } from "./cited-ranges";
 import { ReportView } from "./report-view";
 
 const text = copy.reading;
 
 type Pane = "report" | "text";
 
-const NO_FLAGS: readonly RiskFlag[] = [];
+const NOTHING_CITED: readonly Citing[] = [];
+
+// The element id of what quotes the text, by its index in `citing`: a Risk
+// flag (flag-1, flag-2, ...) or, after the flags, the guaranty gap.
+export function citingId(index: number, flagCount: number): string {
+  return index < flagCount ? `flag-${index + 1}` : "guaranty-gap";
+}
 
 // A Draft's text and its report side by side (app shell brief): the text on
 // the left with every cited sentence underlined in place, the report on the
@@ -41,8 +47,14 @@ export function DraftReading({
   // An element to scroll to and focus once the pane holding it is showing.
   const [jump, setJump] = useState<string | null>(null);
 
-  const flags = report?.riskFlags ?? NO_FLAGS;
-  const cited = useMemo(() => citedText(documentText, flags), [documentText, flags]);
+  // The flags, then the guaranty gap's sentence when there is one.
+  const flagCount = report?.riskFlags?.length ?? 0;
+  const citing = useMemo(() => {
+    if (!report) return NOTHING_CITED;
+    const flags: readonly Citing[] = report.riskFlags ?? NOTHING_CITED;
+    return report.guarantyGap ? [...flags, { sourceSentences: [report.guarantyGap.sourceSentence] }] : flags;
+  }, [report]);
+  const cited = useMemo(() => citedText(documentText, citing), [documentText, citing]);
 
   useEffect(() => {
     if (!jump) return;
@@ -67,17 +79,17 @@ export function DraftReading({
     if (range.start > cursor) {
       pieces.push(<Fragment key={`text-${cursor}`}>{documentText.slice(cursor, range.start)}</Fragment>);
     }
-    const first = range.flags[0];
+    const first = citingId(range.flags[0], flagCount);
     pieces.push(
       <a
         key={range.id}
         id={range.id}
         className={`cited${isLit(range.flags) ? " is-lit" : ""}`}
-        href={`#flag-${first + 1}`}
-        aria-describedby={range.flags.map((index) => `flag-${index + 1}-name`).join(" ")}
+        href={`#${first}`}
+        aria-describedby={range.flags.map((index) => `${citingId(index, flagCount)}-name`).join(" ")}
         onClick={(event) => {
           event.preventDefault();
-          go("report", `flag-${first + 1}`);
+          go("report", first);
         }}
         onMouseEnter={() => setLit(range.flags)}
         onMouseLeave={() => setLit([])}

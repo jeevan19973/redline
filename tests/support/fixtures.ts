@@ -61,22 +61,39 @@ export function plantedClause(fixture: Fixture, id: string): PlantedClause {
   return clause;
 }
 
+// Whether the text refers to a separate guaranty, as the model returns it.
+export type ModelGuarantyReference = { refersToSeparateGuaranty: boolean; sourceSentence: string };
+
+// The model's guaranty reference: the given sentence, or none when null.
+export function guarantyReference(sentence: string | null): ModelGuarantyReference {
+  return sentence === null
+    ? { refersToSeparateGuaranty: false, sourceSentence: "" }
+    : { refersToSeparateGuaranty: true, sourceSentence: sentence };
+}
+
 // What the model would return for a fixture, built from its sidecar: the
-// description as the summary and every planted clause as a flag, verbatim,
-// in sidecar order. `overrides` replaces either field.
+// description as the summary, every planted clause as a flag, verbatim, in
+// sidecar order, and the sidecar's guaranty reference, verbatim. `overrides`
+// replaces any field.
 export function analysisPayload(
   fixture: Fixture,
-  overrides: { summary?: string; riskFlags?: ModelFlag[] } = {},
+  overrides: { summary?: string; riskFlags?: ModelFlag[]; guarantyReference?: ModelGuarantyReference } = {},
 ): Record<string, unknown> {
   return {
     summary: overrides.summary ?? fixture.sidecar.description,
     riskFlags: overrides.riskFlags ?? fixture.sidecar.clauses.map((clause) => modelFlag(clause)),
+    guarantyReference: overrides.guarantyReference ?? guarantyReference(fixture.sidecar.guarantyReference),
   };
 }
 
 // What the model would return for a regeneration request.
 export function requotePayload(sourceSentences: string[]): Record<string, unknown> {
   return { sourceSentences };
+}
+
+// What the model would return for the guaranty sentence's regeneration.
+export function guarantyRequotePayload(sourceSentence: string): Record<string, unknown> {
+  return { sourceSentence };
 }
 
 // Ways a quoted sentence can differ from the text by one character, each of

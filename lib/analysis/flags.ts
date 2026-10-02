@@ -1,20 +1,17 @@
 import type { ModelClient } from "../model/port.ts";
 import { severityFor } from "./catalog.ts";
+import { ATTEMPTS, locateAll } from "./citations.ts";
 import { parseRequote } from "./parse.ts";
 import { requoteRequest } from "./prompt.ts";
-import type { CitationFailure, ProposedFlag, RiskFlag, SourceSentence } from "./report.ts";
+import type { FlagCitationFailure, ProposedFlag, RiskFlag } from "./report.ts";
 
 // Turns the model's proposed flags into the Risk flags a Report shows:
 // citation verification with one regeneration (ADR 0001), severity from the
 // catalog and the personal-reach test (ADR 0003), then ordering.
 
-// How many times a flag's sentences are quoted before it is withheld: the
-// analysis itself, then one regeneration.
-const ATTEMPTS = 2;
-
 export type VerifiedFlags = {
   riskFlags: RiskFlag[];
-  citationFailures: CitationFailure[];
+  citationFailures: FlagCitationFailure[];
 };
 
 export async function verifyFlags(
@@ -27,7 +24,7 @@ export async function verifyFlags(
   const outcomes = await Promise.all(proposed.map((flag) => verifyOne(extractedText, flag, modelClient)));
 
   const riskFlags: RiskFlag[] = [];
-  const citationFailures: CitationFailure[] = [];
+  const citationFailures: FlagCitationFailure[] = [];
   for (const outcome of outcomes) {
     if ("flag" in outcome) citationFailures.push(outcome);
     else riskFlags.push(outcome);
@@ -39,7 +36,7 @@ async function verifyOne(
   extractedText: string,
   proposed: ProposedFlag,
   modelClient: ModelClient,
-): Promise<RiskFlag | CitationFailure> {
+): Promise<RiskFlag | FlagCitationFailure> {
   let sentences = proposed.sourceSentences;
   let located = locateAll(extractedText, sentences);
 
@@ -60,25 +57,6 @@ async function verifyOne(
     readings: proposed.readings,
     reachesSignerPersonally: proposed.reachesSignerPersonally,
   };
-}
-
-type Located = { ok: true; sentences: SourceSentence[] } | { ok: false; failed: string[] };
-
-// Every sentence must be an exact substring of the stored text: indexOf on
-// the sentence as given, with no trimming, case folding, whitespace or quote
-// normalization. A blank sentence, or an empty list, fails. Sentences come
-// back in document order.
-function locateAll(extractedText: string, sentences: readonly string[]): Located {
-  if (sentences.length === 0) return { ok: false, failed: [] };
-  const found: SourceSentence[] = [];
-  const failed: string[] = [];
-  for (const sentence of sentences) {
-    const offset = /\S/.test(sentence) ? extractedText.indexOf(sentence) : -1;
-    if (offset === -1) failed.push(sentence);
-    else found.push({ text: sentence, offset });
-  }
-  if (failed.length > 0) return { ok: false, failed };
-  return { ok: true, sentences: found.sort((a, b) => a.offset - b.offset) };
 }
 
 // Dangerous first, then by the offset of the first Source sentence. The sort

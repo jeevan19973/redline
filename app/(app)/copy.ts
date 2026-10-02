@@ -57,19 +57,28 @@ export const copy = {
     flags: {
       title: "Risk flags",
       legend: "Dangerous means the clause reaches past the business to you personally. Caution means the cost stays with the business.",
+      // Only on a Report stored before the Clean verdict existed.
       none: "Underline didn't flag any clause in this text.",
       olderReport: "This report was made before Underline added Risk flags. Run the analysis again to get them.",
       showInText: "Show in text",
       twoReadings: "This can be read two ways:",
     },
     severity: { Dangerous: "Dangerous", Caution: "Caution" },
+    verdict: {
+      listTitle: "Checked for",
+      checked: "Checked",
+      notChecked: "Not checked",
+    },
+    guarantyGap: {
+      title: "Separate guaranty",
+    },
   },
   // The Draft text and its report, side by side or one at a time.
   reading: {
     toggleLabel: "Show",
     report: "Report",
     text: "Draft text",
-    textNote: "Underlined sentences are the ones a Risk flag quotes. Select one to go to its flag.",
+    textNote: "Underlined sentences are quoted in the report. Select one to go to where the report quotes it.",
   },
   analysis: {
     pending: "Analyzing this Draft. This can take a minute or two.",

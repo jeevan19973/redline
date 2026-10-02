@@ -55,6 +55,10 @@
   --caution: #8A5A00;
   --caution-bg: #FDF3DF;
 
+  /* Clean verdict: a calm neutral, never a success color (ADR 0006) */
+  --clean: #3F4A54;
+  --clean-bg: #EDF0F2;
+
   /* The one brand accent */
   --thermo: #23D6E6;
   --thermo-bright: #4FE3EF;
@@ -109,6 +113,11 @@ button, input { font: inherit; }
   transition: transform 160ms var(--ease-out);
 }
 .skip:focus { transform: translateY(0); }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 
 .wrap {
   width: 100%;
@@ -609,6 +618,99 @@ button, input { font: inherit; }
   font-weight: 500;
 }
 .flag__readings { list-style: decimal; padding-left: 1.4em; display: grid; gap: 4px; }
+
+/* ---------- Guaranty gap ---------- */
+
+/* On paper near the top of the report. Not a Risk flag, so no severity
+   color: an ink rule and the underlined sentence. */
+.gap {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule-paper);
+  border-left: 2px solid var(--ink);
+  scroll-margin: 24px;
+  transition: box-shadow 220ms var(--ease-out), border-color 220ms var(--ease-out);
+}
+.gap.is-lit { border-color: var(--thermo-deep); box-shadow: 0 0 0 1px var(--thermo-deep); }
+.gap.is-lit .flag__quote p { text-decoration-thickness: 3px; }
+.gap__title {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.gap__statement { font-size: 0.9375rem; line-height: 1.5; font-weight: 500; max-width: 60ch; }
+.gap .flag__source { margin-top: 4px; }
+
+/* ---------- Clean verdict ---------- */
+
+/* Clean Slate gray on pale gray (DESIGN.md): never green, never a
+   checkmark. Pale gray on the paper pane, so no shadow. */
+.verdict {
+  padding: 22px 24px 20px;
+  background: var(--clean-bg);
+  color: var(--clean);
+}
+.verdict__title { font-weight: 700; font-size: 1.1875rem; line-height: 1.3; color: var(--ink); }
+.verdict__text { margin-top: 8px; font-size: 0.9375rem; line-height: 1.5; max-width: 60ch; }
+.verdict__label {
+  margin-top: 18px;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.verdict__list {
+  margin-top: 8px;
+  columns: 2;
+  column-gap: 28px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+/* Each line marked by a short gray dash, then the status in words. */
+.verdict__list li {
+  break-inside: avoid;
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  padding: 5px 0 5px 16px;
+  color: var(--ink);
+}
+.verdict__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.95em;
+  width: 8px;
+  height: 1px;
+  background: var(--clean);
+}
+.verdict__status {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--clean);
+}
+.verdict__list li.is-unchecked .verdict__status {
+  padding: 3px 5px 2px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .verdict { padding: 18px 16px 16px; }
+  .verdict__list { columns: 1; }
+}
 
 /* ---------- Draft text and report, side by side ---------- */
 
