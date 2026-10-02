@@ -26,12 +26,14 @@ export type {
   StoredReport,
 } from "./report.ts";
 export { displayReport, readStoredReport } from "./report.ts";
-export type { RedLine } from "./red-lines.ts";
+export type { CatalogRedLine, RedLine } from "./red-lines.ts";
 export type { ClauseType, Severity } from "./catalog.ts";
-export { CATALOG, clauseTypeLabel } from "./catalog.ts";
+export { CATALOG, clauseTypeLabel, isClauseType } from "./catalog.ts";
 export { FIXED_COPY } from "./templates.ts";
 
-// Analyzes one Draft's extracted text against the Signer's Red lines.
+// Analyzes one Draft's extracted text against the Signer's Red lines: a
+// catalog Red line raises a matching Caution flag to Dangerous, and nothing
+// lowers or hides a Dangerous flag (the Severity floor).
 // Rejects, rather than returning part of a Report, when a model call fails
 // or its output is malformed. A flag whose Source sentences cannot be
 // verified, even after one regeneration call, is withheld and recorded in
@@ -50,10 +52,10 @@ export async function analyzeDraft(
   // Any regeneration calls go out flags first, in flag order, then the
   // guaranty sentence's.
   const [flags, guaranty] = await Promise.all([
-    verifyFlags(extractedText, proposed, modelClient),
+    verifyFlags(extractedText, proposed, redLinesSnapshot, modelClient),
     verifyGuaranty(extractedText, guarantyReference, modelClient),
   ]);
-  const cleanVerdict = cleanVerdictFor(flags.riskFlags, flags.citationFailures, guaranty);
+  const cleanVerdict = cleanVerdictFor(flags.riskFlags, flags.citationFailures, guaranty, redLinesSnapshot);
 
   return brandReport({
     summary,

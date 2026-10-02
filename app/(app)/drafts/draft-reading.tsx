@@ -33,6 +33,7 @@ export function DraftReading({
   report,
   actions,
   pending,
+  showRedLines = false,
 }: {
   documentText: string;
   textTitle: string;
@@ -40,6 +41,9 @@ export function DraftReading({
   report: StoredReport | null;
   actions?: React.ReactNode;
   pending?: React.ReactNode;
+  // Whether the report lists the Red lines it ran against: only on a
+  // Signer's saved Draft, since without accounts there are none.
+  showRedLines?: boolean;
 }) {
   const [pane, setPane] = useState<Pane>("report");
   // The flags lit by whatever the Signer is hovering or focusing.
@@ -130,6 +134,7 @@ export function DraftReading({
           <ReportView
             report={report}
             actions={actions}
+            showRedLines={showRedLines}
             linking={{
               lit,
               light: (index) => setLit(index === null ? [] : [index]),

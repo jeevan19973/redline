@@ -31,6 +31,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <RailLink href="/library">{copy.rail.library}</RailLink>
           </li>
           <li>
+            <RailLink href="/red-lines">{copy.rail.redLines}</RailLink>
+          </li>
+          <li>
             <RailLink href="/drafts/new">{copy.rail.addDraft}</RailLink>
           </li>
         </ul>

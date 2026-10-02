@@ -8,6 +8,7 @@ import { supabaseConfig } from "@/lib/env";
 import { openRouterClient } from "@/lib/model/openrouter.ts";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "../copy";
+import { listRedLines } from "../red-lines/store";
 import { isDraftId } from "./draft-id";
 
 export type CreateDraftState = { error?: string };
@@ -19,7 +20,7 @@ export type CreateDraftState = { error?: string };
 // against it (ADR 0001). The text is never trimmed or normalized.
 //
 // The Draft's page then runs the analysis with runAnalysis, so the Signer
-// sees it in progress there.
+// sees it in progress there, against their Red lines as they stand then.
 export async function createDraft(title: unknown, text: unknown): Promise<CreateDraftState> {
   // With no Supabase there is no account to save to; the page says so.
   if (!supabaseConfig()) redirect("/drafts/new");
@@ -56,7 +57,9 @@ export type RunAnalysisResult = { ok: boolean };
 
 // Analyzes a stored Draft and stores its Report, replacing any earlier one.
 // Called from the Draft's page, both for the first analysis and for a re-run;
-// either way it reads the text already stored, so nothing is sent again.
+// either way it reads the text already stored, so nothing is sent again, and
+// reads the Signer's current Red lines here on the server. The Report keeps
+// a snapshot of them, so later changes to the list never rewrite it.
 // Runs on the server, so the OpenRouter key never reaches the browser.
 //
 // A failure leaves any earlier Report in place. The page shows its own
@@ -80,10 +83,14 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
     return { ok: false };
   }
 
+  // An analysis never runs as if the Signer had no Red lines when the list
+  // could not be read.
+  const redLines = await listRedLines(supabase);
+  if (!redLines) return { ok: false };
+
   let report: Report;
   try {
-    // Ticket 08 passes the Signer's Red lines here.
-    report = await analyzeDraft(draft.extracted_text, [], openRouterClient());
+    report = await analyzeDraft(draft.extracted_text, redLines, openRouterClient());
   } catch (error) {
     console.error("Analysis failed", error instanceof Error ? error.message : error);
     return { ok: false };
@@ -112,8 +119,9 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
 export type AnalyzeWithoutAccountResult = { report: StoredReport } | { error: string };
 
 // Analyzes pasted text and returns the Report without storing anything. Only
-// for a copy of Underline with no Supabase, where no account exists; with
-// accounts set up, analysis needs a signed-in Signer and a saved Draft.
+// for a copy of Underline with no Supabase, where no account exists, so
+// there are no Red lines either; with accounts set up, analysis needs a
+// signed-in Signer and a saved Draft.
 export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWithoutAccountResult> {
   const errors = copy.analyze.errors;
   if (supabaseConfig()) return { error: errors.signIn };

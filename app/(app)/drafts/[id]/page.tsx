@@ -77,6 +77,7 @@ export default async function DraftPage({ params }: Props) {
         textIntro={copy.draft.textIntro}
         report={stored.kind === "report" ? stored.report : null}
         actions={<AnalysisRunner draftId={draft.id} mode="rerun" />}
+        showRedLines
         pending={<AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />}
       />
     </article>

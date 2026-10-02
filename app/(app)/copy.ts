@@ -4,6 +4,7 @@ export const copy = {
   rail: {
     label: "Main",
     library: "Library",
+    redLines: "Red lines",
     addDraft: "Add a Draft",
     signedInAs: "Signed in as",
     signOut: "Sign out",
@@ -56,12 +57,20 @@ export const copy = {
     scopeTitle: "What this report covers",
     flags: {
       title: "Risk flags",
-      legend: "Dangerous means the clause reaches past the business to you personally. Caution means the cost stays with the business.",
+      legend:
+        "Dangerous means the clause reaches past the business to you personally, or it's a clause type on your Red lines. Caution means the cost stays with the business.",
       // Only on a Report stored before the Clean verdict existed.
       none: "Underline didn't flag any clause in this text.",
       olderReport: "This report was made before Underline added Risk flags. Run the analysis again to get them.",
       showInText: "Show in text",
       twoReadings: "This can be read two ways:",
+      raisedBy: (label: string) => `Raised by your Red line: ${label}. Without it, this flag would be Caution.`,
+    },
+    // The Red lines a stored Report ran against (its snapshot).
+    redLines: {
+      title: "Red lines this report used",
+      none: "You had no Red lines when this report ran.",
+      stale: "Changing your Red lines doesn't change this report. Run the analysis again to use your current list.",
     },
     severity: { Dangerous: "Dangerous", Caution: "Caution" },
     verdict: {
@@ -86,9 +95,51 @@ export const copy = {
     failed: "Underline couldn't finish analyzing this Draft. The text is still saved, so you can try again without adding it again.",
     retry: "Try again",
     rerun: "Run analysis again",
-    rerunHint: "Replaces this report with a new one from the same text.",
+    rerunHint: "Replaces this report with a new one from the same text and your current Red lines.",
     rerunFailed: "Underline couldn't finish the new analysis. This report is unchanged.",
     unreadable: "Underline couldn't read the saved report on this Draft. Run the analysis again to replace it.",
+  },
+  redLines: {
+    title: "Red lines",
+    intro: "Red lines are terms you won't accept. Underline checks every document against them.",
+    own: {
+      title: "Your Red lines",
+      intro:
+        "Pick a clause type you won't accept. When a document has one, a Caution flag of that type becomes Dangerous and the report gets no Clean verdict.",
+      empty: "You haven't set any Red lines yet. Documents are still checked against the default list below.",
+      clauseType: "Clause type",
+      addLabel: "Clause type you won't accept",
+      add: "Add Red line",
+      adding: "Adding",
+      allUsed: "Every clause type on the default list is already one of your Red lines.",
+      edit: "Edit",
+      save: "Save",
+      saving: "Saving",
+      cancel: "Cancel",
+      remove: "Remove",
+      removing: "Removing",
+      added: (label: string) => `Added ${label}.`,
+      changed: (label: string) => `Changed to ${label}.`,
+      removed: (label: string) => `Removed ${label}.`,
+      floor:
+        "Removing a Red line never hides a Dangerous flag: a clause that reaches you personally always shows as Dangerous.",
+      reports:
+        "Changing your Red lines doesn't change reports you already have. To use your current list on a Draft, open it and run the analysis again.",
+      errors: {
+        duplicate: "That clause type is already one of your Red lines.",
+        invalid: "Choose a clause type from the list.",
+        notFound: "That Red line isn't on your list anymore. Reload the page to see your current list.",
+        unexpected: "Something went wrong on our end. Try again.",
+      },
+    },
+    catalog: {
+      title: "Default Red lines",
+      intro: "Underline checks every document for these clause types. You can't change this list.",
+      severityNote:
+        "A Caution clause becomes Dangerous when it reaches you personally or when its type is one of your Red lines.",
+      clauseType: "Clause type",
+      severity: "Severity",
+    },
   },
   // The page at /drafts/new when this copy of Underline has no accounts.
   analyze: {

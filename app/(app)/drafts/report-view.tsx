@@ -2,6 +2,7 @@ import {
   clauseTypeLabel,
   type CleanVerdict,
   type GuarantyGap,
+  type RedLine,
   type RiskFlag,
   type StoredReport,
 } from "@/lib/analysis/index.ts";
@@ -24,16 +25,20 @@ export type FlagLinking = {
 };
 
 // One Report on paper: the guaranty gap and the Clean verdict when there are
-// any, the summary, the ranked Risk flags, then the scope stamp. Holds no state of its own; DraftReading passes in the linking to
-// the Draft text. `actions` sits under the heading, for the re-run control.
+// any, the summary, the ranked Risk flags, the Red lines it ran against
+// (with `showRedLines`, for a Signer's saved Draft), then the scope stamp.
+// Holds no state of its own; DraftReading passes in the linking to the Draft
+// text. `actions` sits under the heading, for the re-run control.
 export function ReportView({
   report,
   actions,
   linking,
+  showRedLines = false,
 }: {
   report: StoredReport;
   actions?: React.ReactNode;
   linking: FlagLinking;
+  showRedLines?: boolean;
 }) {
   const paragraphs = report.summary.split(/\n\s*\n/).filter((paragraph) => paragraph.trim());
   // The guaranty gap's place in the linking, after the flags.
@@ -96,12 +101,36 @@ export function ReportView({
         </section>
       )}
 
+      {showRedLines && <RedLinesUsed redLines={report.redLinesSnapshot} />}
+
       <section className="report__part report__scope" aria-labelledby="report-scope-title">
         <h3 className="report__part-title" id="report-scope-title">
           {text.scopeTitle}
         </h3>
         <p>{report.scopeStamp}</p>
       </section>
+    </section>
+  );
+}
+
+// The Red lines this report ran against, from its snapshot, and a note that
+// changing them does not change this report until the analysis runs again.
+function RedLinesUsed({ redLines }: { redLines: readonly RedLine[] }) {
+  return (
+    <section className="report__part" aria-labelledby="report-red-lines-title">
+      <h3 className="report__part-title" id="report-red-lines-title">
+        {text.redLines.title}
+      </h3>
+      {redLines.length === 0 ? (
+        <p className="flags__note">{text.redLines.none}</p>
+      ) : (
+        <ul className="report__red-lines" aria-labelledby="report-red-lines-title">
+          {redLines.map((redLine) => (
+            <li key={redLine.id}>{redLine.kind === "catalog" ? clauseTypeLabel(redLine.clauseType) : redLine.text}</li>
+          ))}
+        </ul>
+      )}
+      <p className="flags__legend">{text.redLines.stale}</p>
     </section>
   );
 }
@@ -181,11 +210,15 @@ function CleanVerdictCard({ verdict }: { verdict: CleanVerdict }) {
 }
 
 // One Risk flag on paper: the severity label (its meaning in the word, color
-// only on the label) with its depth gauge, the clause type, each Source
-// sentence underlined in ink with a link to it in the text, then the Reading.
+// only on the label) with its depth gauge, the clause type, the Red line
+// that raised it if one did, each Source sentence underlined in ink with a
+// link to it in the text, then the Reading. The gauge shows reach, not rank:
+// a flag a Red line raised still reaches only the business, so it stays
+// shallow while its label says Dangerous.
 function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; linking: FlagLinking }) {
   const id = `flag-${index + 1}`;
   const dangerous = flag.severity === "Dangerous";
+  const deep = dangerous && !flag.raisedByRedLine;
   const lit = linking.lit.includes(index);
 
   return (
@@ -202,9 +235,12 @@ function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; li
       <header className="flag__head">
         <h4 className="flag__name" id={`${id}-name`}>
           <span className={`sev ${dangerous ? "sev--dangerous" : "sev--caution"}`}>{text.severity[flag.severity]}</span>
-          <span className={`gauge ${dangerous ? "gauge--deep" : "gauge--shallow"}`} aria-hidden="true" />
+          <span className={`gauge ${deep ? "gauge--deep" : "gauge--shallow"}`} aria-hidden="true" />
           <span className="flag__type">{clauseTypeLabel(flag.clauseType)}</span>
         </h4>
+        {flag.raisedByRedLine && (
+          <p className="flag__raised">{text.flags.raisedBy(clauseTypeLabel(flag.raisedByRedLine.clauseType))}</p>
+        )}
       </header>
 
       {flag.sourceSentences.map((sentence, sentenceIndex) => {

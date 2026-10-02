@@ -1,5 +1,6 @@
 import { CATALOG, severityFor } from "./catalog.ts";
 import type { VerifiedGuaranty } from "./guaranty.ts";
+import { catalogRedLineFor, type RedLine } from "./red-lines.ts";
 import type { CleanVerdict, FlagCitationFailure, RiskFlag } from "./report.ts";
 import { CLEAN_VERDICT } from "./templates.ts";
 
@@ -7,13 +8,16 @@ import { CLEAN_VERDICT } from "./templates.ts";
 // listing the whole catalog as checked. Personal guarantee is not checked
 // whenever the model reported a separate guaranty, verified or not, because
 // a Clean verdict must never imply that guaranty was checked (ADR 0003).
+// A flag crossing one of the Signer's Red lines rules it out, as a Dangerous
+// flag does.
 
 export function cleanVerdictFor(
   riskFlags: readonly RiskFlag[],
   withheldFlags: readonly FlagCitationFailure[],
   guaranty: VerifiedGuaranty,
+  redLines: readonly RedLine[],
 ): CleanVerdict | undefined {
-  if (!qualifies(riskFlags, withheldFlags)) return undefined;
+  if (!qualifies(riskFlags, withheldFlags, redLines)) return undefined;
 
   const guarantyReported = guaranty.kind !== "none";
   const notes: string[] = [];
@@ -33,7 +37,11 @@ export function cleanVerdictFor(
 }
 
 // When a Report gets a Clean verdict. Caution flags may sit alongside it.
-function qualifies(riskFlags: readonly RiskFlag[], withheldFlags: readonly FlagCitationFailure[]): boolean {
+function qualifies(
+  riskFlags: readonly RiskFlag[],
+  withheldFlags: readonly FlagCitationFailure[],
+  redLines: readonly RedLine[],
+): boolean {
   // No shown flag is Dangerous.
   if (riskFlags.some((flag) => flag.severity === "Dangerous")) return false;
   // No withheld flag would have been Dangerous either: the model found a
@@ -43,6 +51,10 @@ function qualifies(riskFlags: readonly RiskFlag[], withheldFlags: readonly FlagC
     ({ flag }) => severityFor(flag.clauseType, flag.reachesSignerPersonally) === "Dangerous",
   );
   if (withheldDangerous) return false;
-  // Ticket 08: and no flag crosses a Red line.
+  // No flag crosses a Red line: none was raised by one, and none is of a
+  // clause type the Signer marked as one they will not accept. That covers
+  // a withheld flag too, for the same reason as above.
+  if (riskFlags.some((flag) => flag.raisedByRedLine || catalogRedLineFor(flag.clauseType, redLines))) return false;
+  if (withheldFlags.some(({ flag }) => catalogRedLineFor(flag.clauseType, redLines))) return false;
   return true;
 }

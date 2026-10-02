@@ -1,13 +1,15 @@
 import type { ModelClient } from "../model/port.ts";
-import { severityFor } from "./catalog.ts";
+import { severityFor, type Severity } from "./catalog.ts";
 import { ATTEMPTS, locateAll } from "./citations.ts";
 import { parseRequote } from "./parse.ts";
 import { requoteRequest } from "./prompt.ts";
+import { raiseByRedLines, type RedLine } from "./red-lines.ts";
 import type { FlagCitationFailure, ProposedFlag, RiskFlag } from "./report.ts";
 
 // Turns the model's proposed flags into the Risk flags a Report shows:
 // citation verification with one regeneration (ADR 0001), severity from the
-// catalog and the personal-reach test (ADR 0003), then ordering.
+// catalog and the personal-reach test (ADR 0003), raising by the Signer's
+// Red lines under the Severity floor, then ordering.
 
 export type VerifiedFlags = {
   riskFlags: RiskFlag[];
@@ -17,6 +19,7 @@ export type VerifiedFlags = {
 export async function verifyFlags(
   extractedText: string,
   proposed: readonly ProposedFlag[],
+  redLines: readonly RedLine[],
   modelClient: ModelClient,
 ): Promise<VerifiedFlags> {
   // Each flag that fails gets its own focused regeneration call. The calls
@@ -29,7 +32,30 @@ export async function verifyFlags(
     if ("flag" in outcome) citationFailures.push(outcome);
     else riskFlags.push(outcome);
   }
-  return { riskFlags: rank(riskFlags), citationFailures };
+  const raised = raiseByRedLines(riskFlags, redLines);
+  assertSeverityFloor(riskFlags, raised);
+  return { riskFlags: rank(raised), citationFailures };
+}
+
+// The Severity floor's last guard (ADR 0003). Red line raising can only
+// raise by construction; this checks the result anyway, so a later change
+// that broke it would fail the analysis instead of quietly showing a lower
+// severity. Every flag must still be there, none below its severity from
+// the catalog and the personal-reach test or below where it started, and
+// only a flag that started below Dangerous can say a Red line raised it.
+function assertSeverityFloor(before: readonly RiskFlag[], after: readonly RiskFlag[]): void {
+  const rankOf = (severity: Severity) => (severity === "Dangerous" ? 1 : 0);
+  if (after.length !== before.length) throw new Error("Severity floor: Red lines removed a Risk flag.");
+  after.forEach((flag, index) => {
+    const floor = severityFor(flag.clauseType, flag.reachesSignerPersonally);
+    const start = before[index].severity;
+    if (rankOf(flag.severity) < rankOf(floor) || rankOf(flag.severity) < rankOf(start)) {
+      throw new Error(`Severity floor: a ${flag.clauseType} flag was lowered.`);
+    }
+    if (flag.raisedByRedLine && (start === "Dangerous" || flag.severity !== "Dangerous")) {
+      throw new Error(`Severity floor: a ${flag.clauseType} flag is marked raised but was not.`);
+    }
+  });
 }
 
 async function verifyOne(

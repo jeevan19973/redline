@@ -1,5 +1,5 @@
 import { isClauseType, type ClauseType, type Severity } from "./catalog.ts";
-import { isRedLine, type RedLine } from "./red-lines.ts";
+import { isRedLine, type CatalogRedLine, type RedLine } from "./red-lines.ts";
 
 // A Source sentence on a shown Risk flag: the exact text, verified as a
 // substring of the stored text, and where it starts there. The offset is a
@@ -22,6 +22,9 @@ export type RiskFlag = {
   // The model's answer to the personal-reach test, kept as the basis for
   // the severity.
   readonly reachesSignerPersonally: boolean;
+  // Set when one of the Signer's catalog Red lines raised this flag from
+  // Caution to Dangerous: that Red line, as the report ran against it.
+  readonly raisedByRedLine?: CatalogRedLine;
 };
 
 // A flag as the model proposed it, before verification.
@@ -73,7 +76,8 @@ export type CheckedClause = {
   readonly checked: boolean;
 };
 
-// The result for a Draft with no Dangerous flag (ADR 0004). Its wording is
+// The result for a Draft with no Dangerous flag and nothing crossing a Red
+// line (ADR 0004). Its wording is
 // fixed template text, never model output; it describes the text only.
 export type CleanVerdict = {
   readonly title: string;
@@ -90,7 +94,7 @@ export type ReportContent = {
   // Dangerous first, then by the offset of each flag's first Source sentence.
   readonly riskFlags: readonly RiskFlag[];
   readonly citationFailures: readonly CitationFailure[];
-  // Present only when no flag is Dangerous.
+  // Present only when no flag is Dangerous and no flag crosses a Red line.
   readonly cleanVerdict?: CleanVerdict;
   // Present only when the text refers to a separate guaranty and the
   // sentence that does so passed verification.
@@ -193,10 +197,14 @@ function isText(value: unknown): value is string {
 
 function isRiskFlag(value: unknown): value is RiskFlag {
   if (typeof value !== "object" || value === null) return false;
-  const { clauseType, severity, sourceSentences, readings, reachesSignerPersonally } = value as Record<
-    string,
-    unknown
-  >;
+  const { clauseType, severity, sourceSentences, readings, reachesSignerPersonally, raisedByRedLine } =
+    value as Record<string, unknown>;
+  // Only a Dangerous flag can have been raised, and only by a catalog Red
+  // line on its own clause type.
+  if (raisedByRedLine !== undefined) {
+    if (!isRedLine(raisedByRedLine) || raisedByRedLine.kind !== "catalog") return false;
+    if (raisedByRedLine.clauseType !== clauseType || severity !== "Dangerous") return false;
+  }
   return (
     isClauseType(clauseType) &&
     (severity === "Dangerous" || severity === "Caution") &&

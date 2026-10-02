@@ -16,6 +16,7 @@ stops early. The final section lists what to run first.
 | 03 First report: summary and scope stamp | done | 26 tests. reports RLS checked in a rolled-back transaction; Draft-page flow not run in a browser |
 | 04 Risk flags with verified Source sentences | done | 60 tests. Screen checked in headless Chrome via a temporary route. Clause labels want your read |
 | 07 Clean verdict and guaranty gap | done | 103 tests. No Clean verdict when a withheld flag would have been Dangerous |
+| 08 The Signer's Red lines raise severity, with the Severity floor | done | 119 tests. red_lines RLS checked in a rolled-back transaction; screen not run against a live database |
 
 ## Decisions made in your absence
 

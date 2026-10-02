@@ -1,4 +1,5 @@
 import { isClauseType, type ClauseType } from "./catalog.ts";
+import type { RiskFlag } from "./report.ts";
 
 // A Red line the Signer has set: either a catalog clause type they will not
 // accept, or a term in their own words. `id` is the Red line's own id, so a
@@ -6,6 +7,38 @@ import { isClauseType, type ClauseType } from "./catalog.ts";
 export type RedLine =
   | { readonly id: string; readonly kind: "catalog"; readonly clauseType: ClauseType }
   | { readonly id: string; readonly kind: "freeText"; readonly text: string };
+
+// A Red line of the catalog kind: a clause type the Signer will not accept.
+export type CatalogRedLine = Extract<RedLine, { kind: "catalog" }>;
+
+// The Signer's catalog Red line on a clause type, if they set one.
+export function catalogRedLineFor(
+  clauseType: ClauseType,
+  redLines: readonly RedLine[],
+): CatalogRedLine | undefined {
+  return redLines.find(
+    (redLine): redLine is CatalogRedLine => redLine.kind === "catalog" && redLine.clauseType === clauseType,
+  );
+}
+
+// Red line raising (spec, "Severity floor"): a Caution flag whose clause type
+// the Signer marked as one they will not accept becomes Dangerous, and says
+// which Red line raised it. This can only raise. A Dangerous flag comes back
+// untouched, nothing here writes Caution, and every flag given comes back,
+// so no Red line, nor the lack of one, can hide or lower a Dangerous flag.
+// Free-text Red lines never raise anything.
+export function raiseByRedLines(flags: readonly RiskFlag[], redLines: readonly RedLine[]): RiskFlag[] {
+  return flags.map((flag): RiskFlag => {
+    if (flag.severity === "Dangerous") return flag;
+    const redLine = catalogRedLineFor(flag.clauseType, redLines);
+    if (!redLine) return flag;
+    return {
+      ...flag,
+      severity: "Dangerous",
+      raisedByRedLine: { id: redLine.id, kind: "catalog", clauseType: redLine.clauseType },
+    };
+  });
+}
 
 // A copy of the Red lines as given, so a report's snapshot cannot change when
 // the caller's list does.
