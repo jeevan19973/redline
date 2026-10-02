@@ -1,10 +1,11 @@
 import type { ModelClient } from "../model/port.ts";
-import { verifyFlags } from "./flags.ts";
+import { rank, verifyFlags } from "./flags.ts";
 import { verifyGuaranty } from "./guaranty.ts";
+import { keepEarlierRaisedFlags } from "./kept-flags.ts";
 import { parseAnalysis } from "./parse.ts";
 import { analysisRequest } from "./prompt.ts";
 import { freeTextRedLines, snapshotRedLines, type RedLine } from "./red-lines.ts";
-import { brandReport, type Report } from "./report.ts";
+import { brandReport, readStoredReport, type Judged, type Report, type RiskFlag, type StoredReport } from "./report.ts";
 import { SCOPE_STAMP } from "./templates.ts";
 import { cleanVerdictFor } from "./verdict.ts";
 
@@ -25,6 +26,7 @@ export type {
   FlagCitationFailure,
   GuarantyCitationFailure,
   GuarantyGap,
+  KeptFlag,
   Negotiability,
   OlderRiskFlag,
   ProposedRedLineFlag,
@@ -76,10 +78,29 @@ export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./a
 // Every flag carries the model's Confidence in its Reading, which nothing
 // here reads: it never changes a severity, the order, raising, the Clean
 // verdict or whether a flag shows (ADR 0004).
+//
+// `previousReport` is for a re-run of the same Draft only: the report this
+// run replaces, read with readPreviousReport. A flag it showed as Dangerous
+// because of a Red line is never lowered or dropped, even when that Red line
+// has since been removed or changed: the new run's matching flag stays
+// Dangerous, or, when the new run does not flag the clause, the earlier flag
+// is carried forward once its Source sentences verify again. Either way it
+// is marked keptFromEarlierReport and rules out the Clean verdict. Leave it
+// out for a new Draft, which follows the current Red lines alone.
+export type AnalyzeOptions = { readonly previousReport?: StoredReport };
+
+// Reads a stored report back as the previousReport of a re-run, or null
+// when it is not a well-formed one. Unlike readStoredReport for display, it
+// keeps every flag's Confidence, so a carried-forward flag keeps its own.
+export function readPreviousReport(value: unknown): StoredReport | null {
+  return readStoredReport(value, { showConfidence: true });
+}
+
 export async function analyzeDraft(
   extractedText: string,
   redLines: readonly RedLine[],
   modelClient: ModelClient,
+  { previousReport }: AnalyzeOptions = {},
 ): Promise<Report> {
   if (!/\S/.test(extractedText)) throw new Error("There is no text to analyze.");
   const redLinesSnapshot = snapshotRedLines(redLines);
@@ -93,11 +114,13 @@ export async function analyzeDraft(
     verifyFlags(extractedText, proposed, redLinesSnapshot, modelClient),
     verifyGuaranty(extractedText, guarantyReference, modelClient),
   ]);
-  const cleanVerdict = cleanVerdictFor(flags.riskFlags, flags.citationFailures, guaranty, redLinesSnapshot);
+  const riskFlags = rank(keepEarlierRaisedFlags(extractedText, flags.riskFlags, redLinesSnapshot, previousReport));
+  assertNothingLowered(flags.riskFlags, riskFlags);
+  const cleanVerdict = cleanVerdictFor(riskFlags, flags.citationFailures, guaranty, redLinesSnapshot);
 
   return brandReport({
     summary,
-    riskFlags: flags.riskFlags,
+    riskFlags,
     citationFailures: [
       ...flags.citationFailures,
       ...(guaranty.kind === "withheld" ? [guaranty.citationFailure] : []),
@@ -112,4 +135,19 @@ export async function analyzeDraft(
     modelId,
     createdAt: new Date().toISOString(),
   });
+}
+
+// The Severity floor's guard for kept flags: keeping can only raise or add.
+// Every flag this run produced must still be there, none of them lowered.
+function assertNothingLowered(before: readonly Judged<RiskFlag>[], after: readonly Judged<RiskFlag>[]): void {
+  const key = (flag: Judged<RiskFlag>) =>
+    `${flag.clauseType}|${flag.clauseType === "redLine" ? flag.crossesRedLine.id : ""}|${flag.sourceSentences.map((sentence) => sentence.text).join("\n")}`;
+  const shown = new Map(after.map((flag) => [key(flag), flag]));
+  for (const flag of before) {
+    const kept = shown.get(key(flag));
+    if (!kept) throw new Error(`Severity floor: keeping earlier flags removed a ${flag.clauseType} flag.`);
+    if (flag.severity === "Dangerous" && kept.severity !== "Dangerous") {
+      throw new Error(`Severity floor: keeping earlier flags lowered a ${flag.clauseType} flag.`);
+    }
+  }
 }

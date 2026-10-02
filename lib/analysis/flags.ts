@@ -167,7 +167,7 @@ async function verifyOne(
 
 // Dangerous first, then by the offset of the first Source sentence. The sort
 // is stable, so flags that start at the same place keep the model's order.
-function rank<F extends Judged<RiskFlag>>(flags: F[]): F[] {
+export function rank<F extends Judged<RiskFlag>>(flags: F[]): F[] {
   const tier = (flag: Judged<RiskFlag>) => (flag.severity === "Dangerous" ? 0 : 1);
   return flags.sort(
     (a, b) => tier(a) - tier(b) || a.sourceSentences[0].offset - b.sourceSentences[0].offset,

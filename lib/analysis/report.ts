@@ -41,6 +41,24 @@ type VerifiedFlagBody = {
   // The model's answer to the personal-reach test, kept as the basis for
   // the severity.
   readonly reachesSignerPersonally: boolean;
+  // Set only on a re-run of the same Draft, when the report it replaced
+  // showed this flag as Dangerous because of a Red line and this run would
+  // not have (spec, "Severity floor"; user story 45). It stays Dangerous.
+  readonly keptFromEarlierReport?: KeptFlag;
+};
+
+// Why a flag on a re-run stays Dangerous: the report it replaced showed it
+// as Dangerous because of a Red line, either one that raised it or the
+// free-text Red line it crosses.
+export type KeptFlag = {
+  // That Red line, as the earlier report ran against it.
+  readonly redLine: RedLine;
+  // Whether that Red line has since been removed or changed, so it is not in
+  // the list this report ran against as it was.
+  readonly redLineChanged: boolean;
+  // True when this run did not flag the clause at all: this is the earlier
+  // report's flag, its Source sentences verified again against the text.
+  readonly carriedForward: boolean;
 };
 
 // A Risk flag on a catalog clause type.
@@ -363,8 +381,16 @@ function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value
     crossesRedLine,
     negotiability,
     confidence,
+    keptFromEarlierReport,
   } = value as Record<string, unknown>;
   if (!hasNegotiability(value as Record<string, unknown>)) return false;
+  // A kept flag is always Dangerous, and its Red line is the one that made
+  // it so: the one that raised it, or the free-text Red line it crosses.
+  let kept: KeptFlag | undefined;
+  if (keptFromEarlierReport !== undefined) {
+    if (!isKeptFlag(keptFromEarlierReport) || severity !== "Dangerous") return false;
+    kept = keptFromEarlierReport;
+  }
   // Absent on a flag stored before Confidence existed, and so on every flag
   // stored before negotiability did.
   if (confidence !== undefined && (negotiability === undefined || !isConfidence(confidence))) return false;
@@ -372,11 +398,20 @@ function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value
     // An added flag is never raised, and it crosses a free-text Red line the
     // report ran against, exactly as that Red line was snapshotted.
     if (raisedByRedLine !== undefined) return false;
+    // A kept flag may cross the earlier version of that Red line instead.
     if (!isRedLine(crossesRedLine) || crossesRedLine.kind !== "freeText") return false;
-    const snapshotted = redLinesSnapshot.find((redLine) => redLine.id === crossesRedLine.id);
-    if (!snapshotted || snapshotted.kind !== "freeText" || snapshotted.text !== crossesRedLine.text) return false;
+    if (kept && (kept.redLine.kind !== "freeText" || kept.redLine.id !== crossesRedLine.id)) return false;
+    const sameAs = (redLine: RedLine | undefined) =>
+      redLine?.kind === "freeText" && redLine.id === crossesRedLine.id && redLine.text === crossesRedLine.text;
+    if (!sameAs(redLinesSnapshot.find((redLine) => redLine.id === crossesRedLine.id)) && !sameAs(kept?.redLine)) {
+      return false;
+    }
   } else {
     if (!isClauseType(clauseType) || crossesRedLine !== undefined) return false;
+    if (kept) {
+      if (kept.redLine.kind !== "catalog" || !isRedLine(raisedByRedLine)) return false;
+      if (kept.redLine.id !== raisedByRedLine.id || kept.redLine.clauseType !== clauseType) return false;
+    }
     // Only a Dangerous flag can have been raised, and only by a catalog Red
     // line on its own clause type.
     if (raisedByRedLine !== undefined) {
@@ -394,6 +429,12 @@ function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value
     readings.every((reading) => typeof reading === "string" && reading.trim() !== "") &&
     typeof reachesSignerPersonally === "boolean"
   );
+}
+
+function isKeptFlag(value: unknown): value is KeptFlag {
+  if (typeof value !== "object" || value === null) return false;
+  const { redLine, redLineChanged, carriedForward } = value as Record<string, unknown>;
+  return isRedLine(redLine) && typeof redLineChanged === "boolean" && typeof carriedForward === "boolean";
 }
 
 // A negotiable flag with or without a Counter-offer, a Non-negotiable flag

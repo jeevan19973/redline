@@ -222,7 +222,10 @@ function FlagSlate({
 }) {
   const id = `flag-${index + 1}`;
   const dangerous = flag.severity === "Dangerous";
-  const deep = dangerous && !flag.raisedByRedLine;
+  // A flag a re-run kept Dangerous was Caution in that run by its own reach,
+  // unless it is the earlier report's flag carried forward as it was.
+  const keptAtCaution = flag.keptFromEarlierReport && !flag.keptFromEarlierReport.carriedForward;
+  const deep = dangerous && !flag.raisedByRedLine && !keptAtCaution;
   const lit = linking.lit.includes(index);
 
   return (
@@ -252,10 +255,27 @@ function FlagSlate({
           </span>
           {flag.negotiability === "nonNegotiable" && <span className="tag-fixed">{text.nonNegotiable.label}</span>}
         </h4>
-        {flag.raisedByRedLine && (
-          <p className="flag__raised">{text.flags.raisedBy(clauseTypeLabel(flag.raisedByRedLine.clauseType))}</p>
+        {flag.keptFromEarlierReport ? (
+          // Says why it stays Dangerous in place of the raised line, since
+          // that Red line may no longer be on the Signer's list.
+          <p className="flag__raised">
+            {text.flags.kept({
+              redLine:
+                flag.keptFromEarlierReport.redLine.kind === "catalog"
+                  ? clauseTypeLabel(flag.keptFromEarlierReport.redLine.clauseType)
+                  : flag.keptFromEarlierReport.redLine.text,
+              changed: flag.keptFromEarlierReport.redLineChanged,
+              carried: flag.keptFromEarlierReport.carriedForward,
+            })}
+          </p>
+        ) : (
+          <>
+            {flag.raisedByRedLine && (
+              <p className="flag__raised">{text.flags.raisedBy(clauseTypeLabel(flag.raisedByRedLine.clauseType))}</p>
+            )}
+            {flag.crossesRedLine && <p className="flag__raised">{text.flags.crosses(flag.crossesRedLine.text)}</p>}
+          </>
         )}
-        {flag.crossesRedLine && <p className="flag__raised">{text.flags.crosses(flag.crossesRedLine.text)}</p>}
       </header>
 
       {flag.sourceSentences.map((sentence, sentenceIndex) => (

@@ -261,3 +261,9 @@ code).
   fails after the regeneration is now `unconfirmedNonNegotiable`. It shows at
   its severity with neither the take-it-or-leave-it label nor a Counter-offer,
   no Counter-offer is asked for, and the failure stays in `citationFailures`.
+- Fix 6: a re-run never lowers or drops a flag the report it replaces showed
+  as Dangerous because of a Red line. `analyzeDraft` takes that report as
+  `{ previousReport }`: the new run's matching flag stays Dangerous, or the
+  earlier flag is carried forward once its Source sentences verify again,
+  marked `keptFromEarlierReport` and shown with a line saying why. A new
+  Draft follows the current Red lines alone.

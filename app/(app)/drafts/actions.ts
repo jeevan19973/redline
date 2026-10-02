@@ -9,6 +9,7 @@ import {
   displayAnswer,
   displayReport,
   QUESTION_MAX_LENGTH,
+  readPreviousReport,
   type Answer,
   type Report,
   type ShownAnswer,
@@ -131,7 +132,9 @@ export type RunMode = "first" | "rerun";
 // "first" run only analyzes a Draft that still has no report. If one exists
 // by the time it holds the claim (another tab finished first), the page is
 // re-rendered with that report and no model call is made. If the report
-// can't be read, it does not analyze either.
+// can't be read, neither kind of run analyzes. A re-run passes the report it
+// replaces to the Analysis module, which keeps any flag that report showed
+// as Dangerous because of a Red line.
 //
 // Every analysis, first or re-run, counts against the Signer's one-time
 // limit (ADR 0007). The use is reserved here, in one atomic step, after the
@@ -182,15 +185,22 @@ async function analyzeClaimed(
   draft: { id: string; extracted_text: string },
   mode: RunMode,
 ): Promise<RunAnalysisResult> {
-  if (mode === "first") {
-    const existing = await readReport(supabase, draft.id);
-    if (existing.kind === "error") return { ok: false };
-    if (existing.kind === "found") {
-      // Another run stored it first: show that one.
-      refresh();
-      return { ok: true };
-    }
+  // A report that can't be read stops either kind of run: a first run must
+  // not analyze a Draft that may have one, and a re-run must not replace one
+  // whose Dangerous flags it was never shown.
+  const existing = await readReport(supabase, draft.id);
+  if (existing.kind === "error") return { ok: false };
+  if (mode === "first" && existing.kind === "found") {
+    // Another run stored it first: show that one.
+    refresh();
+    return { ok: true };
   }
+  // A re-run never lowers or drops a flag the report it replaces showed as
+  // Dangerous because of a Red line, so that report goes to the Analysis
+  // module. One whose stored JSON is not a well-formed report (the
+  // "unreadable" case, which the re-run replaces) has no flags to keep.
+  const previousReport =
+    existing.kind === "found" ? (readPreviousReport(existing.report) ?? undefined) : undefined;
 
   const allowance = await readAllowance(supabase);
   if (!allowance) return { ok: false };
@@ -212,7 +222,7 @@ async function analyzeClaimed(
 
   let report: Report;
   try {
-    report = await analyzeDraft(draft.extracted_text, redLines, openRouterClient());
+    report = await analyzeDraft(draft.extracted_text, redLines, openRouterClient(), { previousReport });
   } catch (error) {
     console.error("Analysis failed", error instanceof Error ? error.message : error);
     await releaseUse(owner, "analysis");
