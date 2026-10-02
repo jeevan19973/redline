@@ -18,7 +18,7 @@ import { fitsInOneSave } from "@/lib/draft-limits";
 import { showConfidence, supabaseConfig } from "@/lib/env";
 import { openRouterClient } from "@/lib/model/openrouter.ts";
 import { createClient } from "@/lib/supabase/server";
-import { readAllowance, recordUse } from "../allowance";
+import { readAllowance, releaseUse, reserveUse } from "../allowance";
 import { copy } from "../copy";
 import { listRedLines } from "../red-lines/store";
 import { isDraftId } from "./draft-id";
@@ -120,8 +120,10 @@ export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string };
 // message, so the result only says whether it worked, or why it was refused.
 //
 // Every analysis, first or re-run, counts against the Signer's one-time
-// limit (ADR 0007). It is checked here before any model call, and the use
-// is recorded once the model has returned, so a failed call costs nothing.
+// limit (ADR 0007). The use is reserved here, in one atomic step, right
+// before the model call, and handed back if the call fails before the model
+// returns, so a failed call costs nothing and two requests at once cannot
+// overrun the limit.
 //
 // The Report is stored with the secret key (report-store.ts). When that key
 // is missing, nothing runs: no model call is made for a Report that could
@@ -133,6 +135,8 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/sign-in");
+  // The verified session's subject, never anything the request sent.
+  const owner = auth.claims.sub;
 
   if (!reportStorageReady()) return { ok: false, refusal: copy.analysis.storageUnavailable };
 
@@ -158,16 +162,23 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
   const redLines = await listRedLines(supabase);
   if (!redLines) return { ok: false };
 
+  // The early check above gives the limit for the message; this is the guard.
+  const reserved = await reserveUse(owner, "analysis");
+  if (reserved === "limit") {
+    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
+  }
+  if (reserved === "error") return { ok: false };
+
   let report: Report;
   try {
     report = await analyzeDraft(draft.extracted_text, redLines, openRouterClient());
   } catch (error) {
     console.error("Analysis failed", error instanceof Error ? error.message : error);
+    await releaseUse(owner, "analysis");
     return { ok: false };
   }
-  // The model has returned, so this analysis counts, even if saving the
-  // Report fails below.
-  await recordUse(supabase, "analysis");
+  // The model has returned, so this analysis stays counted, even if saving
+  // the Report fails below.
 
   // One current Report per Draft: a re-run replaces the row.
   if (!(await saveReport(supabase, draft.id, report))) {
@@ -251,10 +262,10 @@ async function answerFrom(text: string, question: string): Promise<AskResult> {
 // loaded here by the Draft's id: the browser sends only the id and the
 // question, never the text. Nothing about the question or the answer is
 // stored. This is the one place a Signer's question reaches the model for a
-// saved Draft, so the question limit (ADR 0007) is checked here, before
-// askDraft, and an answered question is recorded against it, including the
-// fixed "does not say" reply, since the model was asked. A question that
-// fails is not counted. Runs on the server, so the OpenRouter key never
+// saved Draft, so a question is reserved against the limit (ADR 0007) here,
+// in one atomic step, right before askDraft. An answered question stays
+// counted, including the fixed "does not say" reply, since the model was
+// asked. A question that fails is handed back. Runs on the server, so the OpenRouter key never
 // reaches the browser.
 export async function askAboutDraft(draftId: unknown, question: unknown): Promise<AskResult> {
   if (!supabaseConfig()) redirect("/drafts/new");
@@ -265,6 +276,8 @@ export async function askAboutDraft(draftId: unknown, question: unknown): Promis
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/sign-in");
+  // The verified session's subject, never anything the request sent.
+  const owner = auth.claims.sub;
 
   const allowance = await readAllowance(supabase);
   if (!allowance) return { error: copy.question.errors.failed };
@@ -281,12 +294,19 @@ export async function askAboutDraft(draftId: unknown, question: unknown): Promis
     return { error: copy.question.errors.failed };
   }
 
+  // The early check above gives the limit for the message; this is the guard.
+  const reserved = await reserveUse(owner, "question");
+  if (reserved === "limit") return { error: copy.limit.questionReached(allowance.questionLimit) };
+  if (reserved === "error") return { error: copy.question.errors.failed };
+
   const result = await answerFrom(draft.extracted_text, question as string);
   if ("answer" in result) {
-    await recordUse(supabase, "question");
     // Re-render the rail's count. The answer lives in the page's own state,
     // which a refresh keeps.
     refresh();
+  } else {
+    // askDraft failed before the model returned an answer.
+    await releaseUse(owner, "question");
   }
   return result;
 }

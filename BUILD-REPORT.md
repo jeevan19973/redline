@@ -245,3 +245,7 @@ code).
   (`20261002150000_reports_server_only.sql`). The app server stores and reads
   them with `SUPABASE_SECRET_KEY`, after checking through the Signer's own
   session that they own the Draft (`app/(app)/drafts/report-store.ts`).
+- Fix 3: the server reserves each analysis or question before the model
+  call, in one atomic update, and hands it back if the call fails
+  (`20261002160000_reserve_uses.sql`), so two requests at once can no longer
+  overrun the limit. Only the secret key can change a count.

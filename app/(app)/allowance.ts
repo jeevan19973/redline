@@ -1,12 +1,14 @@
 import { allowanceFrom, isSignerLimitRow, type Allowance } from "@/lib/signer-limits";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { createClient } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-// The signed-in Signer's one-time limit (ADR 0007), read and spent with
-// their own session. Row-level security returns only their own row, and they
-// can never write it: the counts move only through record_analysis() and
-// record_question(), which can only add one to the caller's own count.
+// The signed-in Signer's one-time limit (ADR 0007). It is read with their
+// own session, and row-level security returns only their own row. No client
+// can change a count: the server reserves a use before each model call and
+// hands it back if the call fails, through functions only the secret key can
+// execute (20261002160000_reserve_uses.sql).
 
 // What the signed-in Signer has left, or null when it cannot be read. Every
 // caller treats null as "no model call", so a missing table or row never
@@ -23,20 +25,42 @@ export async function readAllowance(supabase: Supabase): Promise<Allowance | nul
   return allowanceFrom(data);
 }
 
-// Counts one completed analysis or answered question. Called only after the
-// model has returned, so a call that fails before then is never counted.
-//
-// The check before the model call and this record are two steps, so two
-// requests sent at the same moment can both pass the check and both reach
-// the model, overrunning the limit by one. That is accepted: closing the gap
-// needs a reservation that is handed back when the model fails, and handing
-// one back means either a client-callable function that lowers a count or
-// the secret key in the app. The stored count itself never passes the
-// limit, since the function refuses once it is there.
-//
-// A failure here is logged, not shown: the model call has already been made
-// and its result is the Signer's.
-export async function recordUse(supabase: Supabase, use: "analysis" | "question"): Promise<void> {
-  const { error } = await supabase.rpc(use === "analysis" ? "record_analysis" : "record_question");
-  if (error) console.error(`Could not record a Signer's ${use}`, error.code, error.message);
+export type Use = "analysis" | "question";
+
+// Takes one use from a Signer's limit before a model call, or says they are
+// at it. One conditional update in the database, so two requests at once can
+// never both take the last one. Uses the secret key, since no client may
+// change a count. `owner` must come from the Signer's verified session
+// claims, never from the request. "error" means no model call either: a
+// count that cannot be reserved never lets a call through unlimited.
+export async function reserveUse(owner: string, use: Use): Promise<"reserved" | "limit" | "error"> {
+  const admin = createAdminClient();
+  if (!admin) {
+    console.error(`SUPABASE_SECRET_KEY is not set, so a Signer's ${use} can't be reserved and no model call runs. See .env.example.`);
+    return "error";
+  }
+  const { data, error } = await admin.rpc(use === "analysis" ? "reserve_analysis" : "reserve_question", {
+    p_owner: owner,
+  });
+  if (error || typeof data !== "boolean") {
+    console.error(`Could not reserve a Signer's ${use}`, error?.code, error?.message ?? "no result");
+    return "error";
+  }
+  return data ? "reserved" : "limit";
+}
+
+// Hands back a reserved use when the model call failed before the model
+// returned, so a failed call costs nothing. A use whose model call returned
+// is never handed back, even if saving its result fails. A failure here is
+// logged: the Signer has lost one use.
+export async function releaseUse(owner: string, use: Use): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) {
+    console.error(`Could not hand back a Signer's ${use}: SUPABASE_SECRET_KEY is not set.`);
+    return;
+  }
+  const { error } = await admin.rpc(use === "analysis" ? "release_analysis" : "release_question", {
+    p_owner: owner,
+  });
+  if (error) console.error(`Could not hand back a Signer's ${use}`, error.code, error.message);
 }
