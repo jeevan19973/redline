@@ -75,6 +75,20 @@ export const copy = {
       none: "You had no Red lines when this report ran.",
       stale: "Changing your Red lines doesn't change this report. Run the analysis again to use your current list.",
     },
+    // A negotiable flag's replacement wording, and the Copy button.
+    counterOffer: {
+      title: "Counter-offer",
+      intro: "Wording you can send as written.",
+      copy: "Copy the wording",
+      copied: "Copied",
+      copyFailed: "Underline couldn't copy to your clipboard. The wording is selected, so copy it with your keyboard.",
+    },
+    // A Non-negotiable flag (ADR 0003): its label and its basis.
+    nonNegotiable: {
+      label: "Take it or leave it",
+      basisTitle: "Why there's no Counter-offer",
+      basisNote: "That sentence shows the terms aren't open to change, so you can accept this clause as written or walk away.",
+    },
     severity: { Dangerous: "Dangerous", Caution: "Caution" },
     verdict: {
       listTitle: "Checked for",

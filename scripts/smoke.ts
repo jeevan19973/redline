@@ -3,7 +3,8 @@
 // lines. It runs under plain Node 24 (type stripping, no extra packages) and
 // reads OPENROUTER_API_KEY and OPENROUTER_MODEL from .env.local when present.
 // It makes one paid model call, plus one more for each flag whose Source
-// sentences fail verification.
+// sentences fail verification, whose Non-negotiable basis fails it, or that
+// came back negotiable with no Counter-offer.
 
 import { readFileSync } from "node:fs";
 import { analyzeDraft, clauseTypeLabel } from "../lib/analysis/index.ts";
@@ -29,6 +30,14 @@ try {
     for (const sentence of flag.sourceSentences) {
       console.log(`   Source sentence at offset ${sentence.offset}: ${JSON.stringify(sentence.text)}`);
     }
+    if (flag.negotiability === "nonNegotiable") {
+      const { offset, text: basis } = flag.nonNegotiableBasis;
+      console.log(`   Negotiability: Non-negotiable (take it or leave it), no Counter-offer`);
+      console.log(`   Basis at offset ${offset}: ${JSON.stringify(basis)}`);
+    } else {
+      console.log(`   Negotiability: negotiable`);
+      console.log(`   Counter-offer: ${flag.counterOffer ? JSON.stringify(flag.counterOffer) : "none (see Counter-offer gaps)"}`);
+    }
   });
 
   const failures = report.citationFailures;
@@ -37,9 +46,19 @@ try {
   console.log(`Flags that passed citation verification: ${report.riskFlags.length}`);
   console.log(`Citation failures (withheld, never shown to the Signer): ${failures.length}`);
   for (const failure of failures) {
-    const what = "flag" in failure ? failure.flag.clauseType : "guaranty gap";
+    const what =
+      "flag" in failure
+        ? failure.flag.clauseType
+        : "nonNegotiableBasis" in failure
+          ? `Non-negotiable basis on a ${failure.nonNegotiableBasis.flag.clauseType} flag (shown as negotiable)`
+          : "guaranty gap";
     console.log(`\n- ${what}, after ${failure.attempts} attempts`);
     for (const sentence of failure.failedSentences) console.log(`   Not in the text: ${JSON.stringify(sentence)}`);
+  }
+
+  console.log(`\nCounter-offer gaps (negotiable flags shown without one): ${report.counterOfferGaps.length}`);
+  for (const gap of report.counterOfferGaps) {
+    console.log(`- ${gap.flag.clauseType}, after ${gap.attempts} attempts`);
   }
 
   if (report.guarantyGap) {

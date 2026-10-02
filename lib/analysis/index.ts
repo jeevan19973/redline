@@ -14,13 +14,17 @@ import { cleanVerdictFor } from "./verdict.ts";
 // of lib/analysis/ is internal.
 
 export type {
+  BasisCitationFailure,
   CatalogRiskFlag,
   CheckedClause,
   CitationFailure,
   CleanVerdict,
+  CounterOfferGap,
   FlagCitationFailure,
   GuarantyCitationFailure,
   GuarantyGap,
+  Negotiability,
+  OlderRiskFlag,
   ProposedRedLineFlag,
   RedLineRiskFlag,
   Report,
@@ -46,6 +50,13 @@ export { FIXED_COPY } from "./templates.ts";
 // verified, even after one regeneration call, is withheld and recorded in
 // citationFailures instead; so is a guaranty-gap sentence that fails the
 // same way.
+// Every shown flag is negotiable or Non-negotiable. A Non-negotiable flag
+// never carries a Counter-offer, and its basis sentence is verified like a
+// Source sentence; one that still fails after a regeneration is recorded in
+// citationFailures and the flag shows as negotiable. A negotiable flag the
+// model gives no Counter-offer, even after a regeneration, shows without one
+// and is recorded in counterOfferGaps. Negotiability never hides a flag or
+// changes its severity.
 export async function analyzeDraft(
   extractedText: string,
   redLines: readonly RedLine[],
@@ -56,8 +67,9 @@ export async function analyzeDraft(
 
   const { data, modelId } = await modelClient.complete(analysisRequest(extractedText, freeTextRedLines(redLinesSnapshot)));
   const { summary, riskFlags: proposed, guarantyReference } = parseAnalysis(data);
-  // Any regeneration calls go out flags first, in flag order, then the
-  // guaranty sentence's.
+  // The first regeneration calls go out flags first, in flag order, then the
+  // guaranty sentence's. A flag's own later calls (its Non-negotiable basis,
+  // then its Counter-offer) follow its earlier ones.
   const [flags, guaranty] = await Promise.all([
     verifyFlags(extractedText, proposed, redLinesSnapshot, modelClient),
     verifyGuaranty(extractedText, guarantyReference, modelClient),
@@ -67,8 +79,12 @@ export async function analyzeDraft(
   return brandReport({
     summary,
     riskFlags: flags.riskFlags,
-    citationFailures:
-      guaranty.kind === "withheld" ? [...flags.citationFailures, guaranty.citationFailure] : flags.citationFailures,
+    citationFailures: [
+      ...flags.citationFailures,
+      ...(guaranty.kind === "withheld" ? [guaranty.citationFailure] : []),
+      ...flags.basisFailures,
+    ],
+    counterOfferGaps: flags.counterOfferGaps,
     unmatchedRedLineFlags: flags.unmatchedRedLineFlags,
     ...(cleanVerdict && { cleanVerdict }),
     ...(guaranty.kind === "gap" && { guarantyGap: guaranty.guarantyGap }),

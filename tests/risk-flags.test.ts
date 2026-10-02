@@ -102,16 +102,7 @@ describe("analyzeDraft: citation verification", () => {
       expect(client.calls).toBe(2);
       expect(report.riskFlags).toEqual([]);
       expect(report.citationFailures).toEqual([
-        {
-          flag: {
-            clauseType: repairs.clauseType,
-            sourceSentences: [wrong],
-            readings: [repairs.why],
-            reachesSignerPersonally: false,
-          },
-          failedSentences: [wrong],
-          attempts: 2,
-        },
+        { flag: modelFlag(repairs, { sourceSentences: [wrong] }), failedSentences: [wrong], attempts: 2 },
       ]);
     });
   });

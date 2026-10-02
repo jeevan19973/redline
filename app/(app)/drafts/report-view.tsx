@@ -2,11 +2,14 @@ import {
   clauseTypeLabel,
   type CleanVerdict,
   type GuarantyGap,
-  type RedLine,
+  type OlderRiskFlag,
   type RiskFlag,
+  type RedLine,
+  type SourceSentence,
   type StoredReport,
 } from "@/lib/analysis/index.ts";
 import { copy } from "../copy";
+import { CopyButton } from "./copy-button";
 import { draftDate } from "./draft-date";
 
 const text = copy.report;
@@ -18,7 +21,8 @@ export type FlagLinking = {
   // Light one flag, or none.
   light: (index: number | null) => void;
   // For each flag and Source sentence, the id of its underline in the text,
-  // or null when it cannot be placed there.
+  // or null when it cannot be placed there. A Non-negotiable flag's basis
+  // sentence comes after its Source sentences.
   targets: readonly (readonly (string | null)[])[];
   // Show the text pane and move to one underlined sentence.
   showInText: (id: string) => void;
@@ -157,23 +161,7 @@ function GuarantyGapNotice({ gap, index, linking }: { gap: GuarantyGap; index: n
         {text.guarantyGap.title}
       </h3>
       <p className="gap__statement">{gap.statement}</p>
-      <div className="flag__source">
-        <blockquote className="flag__quote">
-          <p>{gap.sourceSentence.text}</p>
-        </blockquote>
-        {target && (
-          <a
-            className="flag__cite"
-            href={`#${target}`}
-            onClick={(event) => {
-              event.preventDefault();
-              linking.showInText(target);
-            }}
-          >
-            {text.flags.showInText}
-          </a>
-        )}
-      </div>
+      <Quoted sentence={gap.sourceSentence} target={target} linking={linking} />
     </section>
   );
 }
@@ -212,10 +200,12 @@ function CleanVerdictCard({ verdict }: { verdict: CleanVerdict }) {
 // One Risk flag on paper: the severity label (its meaning in the word, color
 // only on the label) with its depth gauge, the clause type, the Red line
 // that raised it if one did, or the free-text Red line it crosses, each Source sentence underlined in ink with a
-// link to it in the text, then the Reading. The gauge shows reach, not rank:
+// link to it in the text, then the Reading. Last comes the Counter-offer
+// with its Copy button, or for a Non-negotiable flag the take-it-or-leave-it
+// label in the header and the quoted sentence it rests on. The gauge shows reach, not rank:
 // a flag a Red line raised still reaches only the business, so it stays
 // shallow while its label says Dangerous.
-function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; linking: FlagLinking }) {
+function FlagSlate({ flag, index, linking }: { flag: RiskFlag | OlderRiskFlag; index: number; linking: FlagLinking }) {
   const id = `flag-${index + 1}`;
   const dangerous = flag.severity === "Dangerous";
   const deep = dangerous && !flag.raisedByRedLine;
@@ -239,6 +229,7 @@ function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; li
           <span className="flag__type">
             {flag.clauseType === "redLine" ? text.flags.redLineType : clauseTypeLabel(flag.clauseType)}
           </span>
+          {flag.negotiability === "nonNegotiable" && <span className="tag-fixed">{text.nonNegotiable.label}</span>}
         </h4>
         {flag.raisedByRedLine && (
           <p className="flag__raised">{text.flags.raisedBy(clauseTypeLabel(flag.raisedByRedLine.clauseType))}</p>
@@ -246,28 +237,14 @@ function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; li
         {flag.crossesRedLine && <p className="flag__raised">{text.flags.crosses(flag.crossesRedLine.text)}</p>}
       </header>
 
-      {flag.sourceSentences.map((sentence, sentenceIndex) => {
-        const target = linking.targets[index]?.[sentenceIndex] ?? null;
-        return (
-          <div className="flag__source" key={sentenceIndex}>
-            <blockquote className="flag__quote">
-              <p>{sentence.text}</p>
-            </blockquote>
-            {target && (
-              <a
-                className="flag__cite"
-                href={`#${target}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  linking.showInText(target);
-                }}
-              >
-                {text.flags.showInText}
-              </a>
-            )}
-          </div>
-        );
-      })}
+      {flag.sourceSentences.map((sentence, sentenceIndex) => (
+        <Quoted
+          key={sentenceIndex}
+          sentence={sentence}
+          target={linking.targets[index]?.[sentenceIndex] ?? null}
+          linking={linking}
+        />
+      ))}
 
       <div className="flag__reading">
         {flag.readings.length === 1 ? (
@@ -283,6 +260,63 @@ function FlagSlate({ flag, index, linking }: { flag: RiskFlag; index: number; li
           </>
         )}
       </div>
+
+      {flag.negotiability === "nonNegotiable" && (
+        <div className="flag__part">
+          <h5 className="flag__part-title">{text.nonNegotiable.basisTitle}</h5>
+          <Quoted
+            sentence={flag.nonNegotiableBasis}
+            target={linking.targets[index]?.[flag.sourceSentences.length] ?? null}
+            linking={linking}
+          />
+          <p className="flag__part-note">{text.nonNegotiable.basisNote}</p>
+        </div>
+      )}
+
+      {flag.counterOffer && (
+        <div className="flag__part">
+          <h5 className="flag__part-title" id={`${id}-counter-title`}>
+            {text.counterOffer.title}
+          </h5>
+          <p className="flag__part-note">{text.counterOffer.intro}</p>
+          <p className="counter" id={`${id}-counter`}>
+            {flag.counterOffer}
+          </p>
+          <CopyButton wording={flag.counterOffer} sourceId={`${id}-counter`} describedBy={`${id}-name`} />
+        </div>
+      )}
     </article>
+  );
+}
+
+// A sentence quoted from the text, underlined in ink, with a link to where
+// it sits in the Draft text when it can be placed there.
+function Quoted({
+  sentence,
+  target,
+  linking,
+}: {
+  sentence: SourceSentence;
+  target: string | null;
+  linking: FlagLinking;
+}) {
+  return (
+    <div className="flag__source">
+      <blockquote className="flag__quote">
+        <p>{sentence.text}</p>
+      </blockquote>
+      {target && (
+        <a
+          className="flag__cite"
+          href={`#${target}`}
+          onClick={(event) => {
+            event.preventDefault();
+            linking.showInText(target);
+          }}
+        >
+          {text.flags.showInText}
+        </a>
+      )}
+    </div>
   );
 }

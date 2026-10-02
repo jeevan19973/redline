@@ -67,12 +67,43 @@ export function parseRequote(data: unknown): string[] {
   return parseSentences(sourceSentences, "the regeneration's sourceSentences", { allowEmpty: true });
 }
 
+// The answer to a Non-negotiable basis sentence's regeneration. An empty
+// string is the model saying it cannot find one, which verification then
+// rejects.
+export function parseBasisRequote(data: unknown): string {
+  const { sourceSentence } = asObject(data, "the regeneration");
+  if (typeof sourceSentence !== "string") {
+    throw new MalformedModelOutput("the regeneration's sourceSentence is not text");
+  }
+  return sourceSentence;
+}
+
+// The answer to a Counter-offer regeneration. An empty string is the model
+// saying it has no wording to offer, which is recorded as a gap.
+export function parseCounterOffer(data: unknown): string {
+  const { counterOffer } = asObject(data, "the regeneration");
+  if (typeof counterOffer !== "string") throw new MalformedModelOutput("the regeneration's counterOffer is not text");
+  return counterOffer;
+}
+
 // A catalog flag, or a flag the model says a free-text Red line produced:
 // clause type "redLine" and that Red line's id. The id is matched to the Red
 // lines passed in later, in flags.ts. A catalog flag's redLineId, which the
-// schema sends as an empty string, is ignored.
+// schema sends as an empty string, is ignored. The negotiability call must be
+// one of its two values, but the basis and Counter-offer are only checked to
+// be text: an empty or wrong one is handled after citation verification,
+// in negotiability.ts, so it never hides a flag.
 function parseFlag(value: unknown, where: string): ProposedFlag {
-  const { clauseType, redLineId, sourceSentences, readings, reachesSignerPersonally } = asObject(value, where);
+  const {
+    clauseType,
+    redLineId,
+    sourceSentences,
+    readings,
+    reachesSignerPersonally,
+    negotiability,
+    nonNegotiableBasis,
+    counterOffer,
+  } = asObject(value, where);
   if (clauseType !== "redLine" && !isClauseType(clauseType)) {
     throw new MalformedModelOutput(`${where}.clauseType is not a catalog clause type or redLine`);
   }
@@ -85,10 +116,19 @@ function parseFlag(value: unknown, where: string): ProposedFlag {
   if (typeof reachesSignerPersonally !== "boolean") {
     throw new MalformedModelOutput(`${where}.reachesSignerPersonally is not true or false`);
   }
+  if (negotiability !== "negotiable" && negotiability !== "nonNegotiable") {
+    throw new MalformedModelOutput(`${where}.negotiability is not negotiable or nonNegotiable`);
+  }
+  if (typeof nonNegotiableBasis !== "string") throw new MalformedModelOutput(`${where}.nonNegotiableBasis is not text`);
+  if (typeof counterOffer !== "string") throw new MalformedModelOutput(`${where}.counterOffer is not text`);
+  const call: ProposedFlag["negotiability"] = negotiability;
   const body = {
     sourceSentences: parseSentences(sourceSentences, `${where}.sourceSentences`),
     readings: readings as string[],
     reachesSignerPersonally,
+    negotiability: call,
+    nonNegotiableBasis,
+    counterOffer,
   };
   if (clauseType !== "redLine") return { clauseType, ...body };
   if (typeof redLineId !== "string") throw new MalformedModelOutput(`${where}.redLineId is not text`);

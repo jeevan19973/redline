@@ -33,32 +33,58 @@ export function loadFixture(name: FixtureName): Fixture {
 }
 
 // A Risk flag as the model returns it in its structured output. redLineId
-// names the free-text Red line a "redLine" flag crosses.
+// names the free-text Red line a "redLine" flag crosses. nonNegotiableBasis
+// and counterOffer are empty strings where they do not apply, as the strict
+// schema has the model send them.
 export type ModelFlag = {
   clauseType: string;
   redLineId?: string;
   sourceSentences: string[];
   readings: string[];
   reachesSignerPersonally: boolean;
+  negotiability: "negotiable" | "nonNegotiable";
+  nonNegotiableBasis: string;
+  counterOffer: string;
 };
 
+// The Counter-offer the model would write for a planted clause. Scripted
+// wording, unique per clause, so a test can tell which flag carries it.
+export function counterOfferFor(clause: PlantedClause): string {
+  return `Replacement wording for the clause "${clause.id}".`;
+}
+
 // The flag the model would return for one planted clause: its sentence
-// verbatim, one Reading, and the personal-reach fact the sidecar's expected
+// verbatim, one Reading, the personal-reach fact the sidecar's expected
 // severity implies (a planted clause is Dangerous only because it reaches
-// the Signer personally). `overrides` replaces any field.
+// the Signer personally), and negotiable with a Counter-offer. `overrides`
+// replaces any field.
 export function modelFlag(clause: PlantedClause, overrides: Partial<ModelFlag> = {}): ModelFlag {
   return {
     clauseType: clause.clauseType,
     sourceSentences: [clause.sentence],
     readings: [clause.why],
     reachesSignerPersonally: clause.expectedSeverity === "Dangerous",
+    negotiability: "negotiable",
+    nonNegotiableBasis: "",
+    counterOffer: counterOfferFor(clause),
     ...overrides,
   };
 }
 
+// The same planted clause flagged Non-negotiable on the given basis
+// sentence, with no Counter-offer unless `overrides` supplies one.
+export function nonNegotiableFlag(
+  clause: PlantedClause,
+  basis: string,
+  overrides: Partial<ModelFlag> = {},
+): ModelFlag {
+  return modelFlag(clause, { negotiability: "nonNegotiable", nonNegotiableBasis: basis, counterOffer: "", ...overrides });
+}
+
 // The flag the model would return for a free-text Red line: clause type
 // "redLine", the Red line's id, and the given sentence quoted as is, with
-// the personal-reach fact false unless `overrides` says otherwise.
+// the personal-reach fact false and a Counter-offer unless `overrides` says
+// otherwise.
 export function redLineFlag(redLineId: string, sentence: string, overrides: Partial<ModelFlag> = {}): ModelFlag {
   return {
     clauseType: "redLine",
@@ -66,6 +92,9 @@ export function redLineFlag(redLineId: string, sentence: string, overrides: Part
     sourceSentences: [sentence],
     readings: ["The document contains a term on your Red lines."],
     reachesSignerPersonally: false,
+    negotiability: "negotiable",
+    nonNegotiableBasis: "",
+    counterOffer: "Replacement wording for the clause with a term on your Red lines.",
     ...overrides,
   };
 }
@@ -105,6 +134,17 @@ export function analysisPayload(
 // What the model would return for a regeneration request.
 export function requotePayload(sourceSentences: string[]): Record<string, unknown> {
   return { sourceSentences };
+}
+
+// What the model would return for a Non-negotiable basis sentence's
+// regeneration.
+export function basisRequotePayload(sourceSentence: string): Record<string, unknown> {
+  return { sourceSentence };
+}
+
+// What the model would return for a Counter-offer regeneration.
+export function counterOfferPayload(counterOffer: string): Record<string, unknown> {
+  return { counterOffer };
 }
 
 // What the model would return for the guaranty sentence's regeneration.

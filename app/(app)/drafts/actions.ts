@@ -131,13 +131,22 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
 
   try {
     const report = await analyzeDraft(text, [], openRouterClient());
-    // Citation failures stay on the server: they are never shown to the Signer.
+    // Citation failures and Counter-offer gaps stay on the server: they are
+    // never shown to the Signer.
     for (const failure of report.citationFailures) {
       if ("flag" in failure) {
         console.error("Withheld a Risk flag whose Source sentences failed verification", failure.flag.clauseType);
+      } else if ("nonNegotiableBasis" in failure) {
+        console.error(
+          "Showed a Risk flag as negotiable because its Non-negotiable basis failed verification",
+          failure.nonNegotiableBasis.flag.clauseType,
+        );
       } else {
         console.error("Withheld the guaranty gap, whose Source sentence failed verification");
       }
+    }
+    for (const gap of report.counterOfferGaps) {
+      console.error("Showed a negotiable Risk flag with no Counter-offer", gap.flag.clauseType);
     }
     return { report: displayReport(report) };
   } catch (error) {

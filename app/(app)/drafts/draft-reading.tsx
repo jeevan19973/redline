@@ -51,11 +51,17 @@ export function DraftReading({
   // An element to scroll to and focus once the pane holding it is showing.
   const [jump, setJump] = useState<string | null>(null);
 
-  // The flags, then the guaranty gap's sentence when there is one.
+  // The flags, then the guaranty gap's sentence when there is one. A
+  // Non-negotiable flag's basis sentence is placed after its Source
+  // sentences, so it is underlined in the text and linked to its flag too.
   const flagCount = report?.riskFlags?.length ?? 0;
   const citing = useMemo(() => {
     if (!report) return NOTHING_CITED;
-    const flags: readonly Citing[] = report.riskFlags ?? NOTHING_CITED;
+    const flags: readonly Citing[] = (report.riskFlags ?? []).map((flag) => ({
+      sourceSentences: flag.nonNegotiableBasis
+        ? [...flag.sourceSentences, flag.nonNegotiableBasis]
+        : flag.sourceSentences,
+    }));
     return report.guarantyGap ? [...flags, { sourceSentences: [report.guarantyGap.sourceSentence] }] : flags;
   }, [report]);
   const cited = useMemo(() => citedText(documentText, citing), [documentText, citing]);

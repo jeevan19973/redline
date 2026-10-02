@@ -1,22 +1,41 @@
 import type { ModelClient } from "../model/port.ts";
 import { severityFor, type Severity } from "./catalog.ts";
 import { ATTEMPTS, locateAll } from "./citations.ts";
+import { resolveNegotiability } from "./negotiability.ts";
 import { parseRequote } from "./parse.ts";
 import { requoteRequest } from "./prompt.ts";
 import { freeTextRedLineById, raiseByRedLines, type FreeTextRedLine, type RedLine } from "./red-lines.ts";
-import type { FlagCitationFailure, ProposedFlag, ProposedRedLineFlag, RiskFlag } from "./report.ts";
+import type {
+  BasisCitationFailure,
+  CounterOfferGap,
+  FlagCitationFailure,
+  ProposedFlag,
+  ProposedRedLineFlag,
+  RiskFlag,
+} from "./report.ts";
 
 // Turns the model's proposed flags into the Risk flags a Report shows:
 // matching each flag a free-text Red line produced to that Red line,
 // citation verification with one regeneration (ADR 0001), severity from the
-// catalog and the personal-reach test (ADR 0003), raising by the Signer's
-// catalog Red lines under the Severity floor, then ordering.
+// catalog and the personal-reach test (ADR 0003), negotiability and the
+// Counter-offer (negotiability.ts), raising by the Signer's catalog Red lines
+// under the Severity floor, then ordering.
 
 export type VerifiedFlags = {
   riskFlags: RiskFlag[];
   citationFailures: FlagCitationFailure[];
+  // Non-negotiable basis sentences that failed verification, on flags that
+  // were shown as negotiable.
+  basisFailures: BasisCitationFailure[];
+  counterOfferGaps: CounterOfferGap[];
   unmatchedRedLineFlags: ProposedRedLineFlag[];
 };
+
+// One proposed flag after verification: withheld, or shown with whatever the
+// maintainer should know about its negotiability.
+type Outcome =
+  | { kind: "withheld"; citationFailure: FlagCitationFailure }
+  | { kind: "shown"; riskFlag: RiskFlag; basisFailure?: BasisCitationFailure; counterOfferGap?: CounterOfferGap };
 
 // A proposed flag ready for verification, with the free-text Red line it
 // crosses when a free-text Red line produced it.
@@ -43,19 +62,26 @@ export async function verifyFlags(
     else unmatchedRedLineFlags.push(flag);
   }
 
-  // Each flag that fails gets its own focused regeneration call. The calls
-  // run together; each starts in flag order.
+  // Each flag that fails gets its own focused regeneration calls. The flags
+  // run together; each one's calls go out in turn.
   const outcomes = await Promise.all(matched.map((flag) => verifyOne(extractedText, flag, modelClient)));
 
   const riskFlags: RiskFlag[] = [];
   const citationFailures: FlagCitationFailure[] = [];
+  const basisFailures: BasisCitationFailure[] = [];
+  const counterOfferGaps: CounterOfferGap[] = [];
   for (const outcome of outcomes) {
-    if ("flag" in outcome) citationFailures.push(outcome);
-    else riskFlags.push(outcome);
+    if (outcome.kind === "withheld") {
+      citationFailures.push(outcome.citationFailure);
+      continue;
+    }
+    riskFlags.push(outcome.riskFlag);
+    if (outcome.basisFailure) basisFailures.push(outcome.basisFailure);
+    if (outcome.counterOfferGap) counterOfferGaps.push(outcome.counterOfferGap);
   }
   const raised = raiseByRedLines(riskFlags, redLines);
   assertSeverityFloor(riskFlags, raised);
-  return { riskFlags: rank(raised), citationFailures, unmatchedRedLineFlags };
+  return { riskFlags: rank(raised), citationFailures, basisFailures, counterOfferGaps, unmatchedRedLineFlags };
 }
 
 // The Severity floor's last guard (ADR 0003). Red line raising can only
@@ -88,7 +114,7 @@ async function verifyOne(
   extractedText: string,
   { proposed, redLine }: Matched,
   modelClient: ModelClient,
-): Promise<RiskFlag | FlagCitationFailure> {
+): Promise<Outcome> {
   let sentences = proposed.sourceSentences;
   let located = locateAll(extractedText, sentences);
 
@@ -99,19 +125,40 @@ async function verifyOne(
     const { data } = await modelClient.complete(requoteRequest(extractedText, proposed, located.failed, redLine));
     sentences = parseRequote(data);
     located = locateAll(extractedText, sentences);
-    if (!located.ok) return { flag: proposed, failedSentences: located.failed, attempts: ATTEMPTS };
+    if (!located.ok) {
+      return {
+        kind: "withheld",
+        citationFailure: { flag: proposed, failedSentences: located.failed, attempts: ATTEMPTS },
+      };
+    }
   }
 
+  // Unreachable: verifyFlags matched every redLine flag to its Red line.
+  if (proposed.clauseType === "redLine" && !redLine) {
+    throw new Error("A flag a free-text Red line produced reached verification unmatched.");
+  }
+
+  // Only once the flag is certain to show. Its severity is decided apart
+  // from this, so negotiability cannot change it.
+  const { negotiability, ...notes } = await resolveNegotiability(
+    extractedText,
+    proposed,
+    located.sentences,
+    redLine,
+    modelClient,
+  );
   const verified = {
     severity: severityFor(proposed.clauseType, proposed.reachesSignerPersonally),
     sourceSentences: located.sentences,
     readings: proposed.readings,
     reachesSignerPersonally: proposed.reachesSignerPersonally,
+    ...negotiability,
   };
-  if (proposed.clauseType !== "redLine") return { clauseType: proposed.clauseType, ...verified };
-  // Unreachable: verifyFlags matched every redLine flag to its Red line.
-  if (!redLine) throw new Error("A flag a free-text Red line produced reached verification unmatched.");
-  return { clauseType: "redLine", ...verified, crossesRedLine: redLine };
+  const riskFlag: RiskFlag =
+    proposed.clauseType !== "redLine"
+      ? { clauseType: proposed.clauseType, ...verified }
+      : { clauseType: "redLine", ...verified, crossesRedLine: redLine! };
+  return { kind: "shown", riskFlag, ...notes };
 }
 
 // Dangerous first, then by the offset of the first Source sentence. The sort

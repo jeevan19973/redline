@@ -43,13 +43,51 @@ export type RedLineRiskFlag = VerifiedFlagBody & {
   readonly raisedByRedLine?: never;
 };
 
-export type RiskFlag = CatalogRiskFlag | RedLineRiskFlag;
+// Whether the Signer can negotiate a flagged clause (ADR 0003), decided from
+// the text. A negotiable flag carries the Counter-offer the model wrote, or
+// none when the model gave none even after a regeneration (recorded in the
+// Report's counterOfferGaps). A Non-negotiable flag carries the sentence its
+// basis rests on, verified like a Source sentence, and never a Counter-offer.
+// Negotiability never changes severity.
+export type Negotiability =
+  | {
+      readonly negotiability: "negotiable";
+      // Replacement contract wording the Signer can send as written.
+      readonly counterOffer?: string;
+      readonly nonNegotiableBasis?: never;
+    }
+  | {
+      readonly negotiability: "nonNegotiable";
+      // The sentence that shows the Counterparty will not change the clause,
+      // such as a statement that the terms are standard and not negotiable.
+      readonly nonNegotiableBasis: SourceSentence;
+      readonly counterOffer?: never;
+    };
 
-// What every flag the model proposes carries, before verification.
+// A Risk flag of either shape, before negotiability.
+type FlagWithoutNegotiability = CatalogRiskFlag | RedLineRiskFlag;
+
+export type RiskFlag = FlagWithoutNegotiability & Negotiability;
+
+// A Risk flag read back from a Report stored before negotiability existed:
+// it was never checked for it, so it shows neither a Counter-offer nor a
+// take-it-or-leave-it label.
+export type OlderRiskFlag = FlagWithoutNegotiability & {
+  readonly negotiability?: never;
+  readonly counterOffer?: never;
+  readonly nonNegotiableBasis?: never;
+};
+
+// What every flag the model proposes carries, before verification. The
+// negotiability fields are as the model wrote them: the basis is an empty
+// string on a negotiable flag, and the Counter-offer may be one too.
 type ProposedFlagBody = {
   readonly sourceSentences: readonly string[];
   readonly readings: readonly string[];
   readonly reachesSignerPersonally: boolean;
+  readonly negotiability: "negotiable" | "nonNegotiable";
+  readonly nonNegotiableBasis: string;
+  readonly counterOffer: string;
 };
 
 // A flag as the model proposed it on a catalog clause type.
@@ -83,7 +121,30 @@ export type GuarantyCitationFailure = {
   readonly attempts: number;
 };
 
-export type CitationFailure = FlagCitationFailure | GuarantyCitationFailure;
+// A Non-negotiable basis sentence that failed verification, even after a
+// regeneration. The flag itself was shown, at its severity, as negotiable:
+// the take-it-or-leave-it label is not shown when its basis cannot be cited.
+export type BasisCitationFailure = {
+  readonly nonNegotiableBasis: {
+    // The flag as the model first proposed it, basis included.
+    readonly flag: ProposedFlag;
+  };
+  readonly failedSentences: readonly string[];
+  readonly attempts: number;
+};
+
+export type CitationFailure = FlagCitationFailure | GuarantyCitationFailure | BasisCitationFailure;
+
+// A negotiable flag shown without a Counter-offer, because the model gave
+// none even after a regeneration. Code never writes one in its place. For
+// the maintainer and evals; never shown to the Signer.
+export type CounterOfferGap = {
+  // The flag as the model first proposed it.
+  readonly flag: ProposedFlag;
+  // How many times the model was asked: the first analysis, then one
+  // regeneration.
+  readonly attempts: number;
+};
 
 // The text refers to a separate guaranty, which Underline never saw, so the
 // Signer's personal exposure under it was not checked (ADR 0003).
@@ -114,12 +175,13 @@ export type CleanVerdict = {
   readonly checked: readonly CheckedClause[];
 };
 
-// What a Report holds. Later tickets add Confidence and Counter-offers.
+// What a Report holds. A later ticket adds Confidence.
 export type ReportContent = {
   readonly summary: string;
   // Dangerous first, then by the offset of each flag's first Source sentence.
   readonly riskFlags: readonly RiskFlag[];
   readonly citationFailures: readonly CitationFailure[];
+  readonly counterOfferGaps: readonly CounterOfferGap[];
   // Flags the model said a free-text Red line produced, naming an id that is
   // not one of the free-text Red lines passed in. Dropped before citation
   // verification; for the maintainer and evals, never shown to the Signer.
@@ -149,11 +211,15 @@ export type Report = ReportContent & { readonly [reportBrand]: true };
 // A Report as the Signer sees it, read back from storage or sent to the
 // browser. It is plain data for display: holding one is not proof that
 // analyzeDraft produced it. It never carries citation failures, so they
-// never reach the browser, and neither do unmatched Red line flags.
-// `riskFlags` is absent on a Report stored before
-// Risk flags existed, which was never checked for them.
-export type StoredReport = Omit<ReportContent, "riskFlags" | "citationFailures" | "unmatchedRedLineFlags"> & {
-  readonly riskFlags?: readonly RiskFlag[];
+// never reach the browser, and neither do unmatched Red line flags or
+// Counter-offer gaps. `riskFlags` is absent on a Report stored before Risk
+// flags existed, which was never checked for them, and its flags lack
+// negotiability on one stored before that existed.
+export type StoredReport = Omit<
+  ReportContent,
+  "riskFlags" | "citationFailures" | "unmatchedRedLineFlags" | "counterOfferGaps"
+> & {
+  readonly riskFlags?: readonly (RiskFlag | OlderRiskFlag)[];
 };
 
 export function brandReport(content: ReportContent): Report {
@@ -162,14 +228,14 @@ export function brandReport(content: ReportContent): Report {
 
 // The part of a fresh Report the Signer may see, for sending to the browser.
 export function displayReport(report: Report): StoredReport {
-  const { citationFailures: _withheld, unmatchedRedLineFlags: _dropped, ...shown } = report;
+  const { citationFailures: _withheld, unmatchedRedLineFlags: _dropped, counterOfferGaps: _gaps, ...shown } = report;
   return shown;
 }
 
 // Reads a stored Report back for display, or returns null when the value is
 // not a well-formed one (a Signer can write their own report rows, so the
-// stored JSON is not trusted). Citation failures and unmatched Red line
-// flags are dropped.
+// stored JSON is not trusted). Citation failures, unmatched Red line flags
+// and Counter-offer gaps are dropped.
 export function readStoredReport(value: unknown): StoredReport | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const { summary, riskFlags, cleanVerdict, guarantyGap, scopeStamp, redLinesSnapshot, modelId, createdAt } =
@@ -227,10 +293,11 @@ function isText(value: unknown): value is string {
   return typeof value === "string" && value.trim() !== "";
 }
 
-function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value is RiskFlag {
+function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value is RiskFlag | OlderRiskFlag {
   if (typeof value !== "object" || value === null) return false;
   const { clauseType, severity, sourceSentences, readings, reachesSignerPersonally, raisedByRedLine, crossesRedLine } =
     value as Record<string, unknown>;
+  if (!hasNegotiability(value as Record<string, unknown>)) return false;
   if (clauseType === "redLine") {
     // An added flag is never raised, and it crosses a free-text Red line the
     // report ran against, exactly as that Red line was snapshotted.
@@ -257,6 +324,19 @@ function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value
     readings.every((reading) => typeof reading === "string" && reading.trim() !== "") &&
     typeof reachesSignerPersonally === "boolean"
   );
+}
+
+// A negotiable flag with or without a Counter-offer, a Non-negotiable flag
+// with its basis and no Counter-offer, or a flag stored before negotiability
+// existed, with none of the three fields.
+function hasNegotiability(flag: Record<string, unknown>): boolean {
+  const { negotiability, counterOffer, nonNegotiableBasis } = flag;
+  if (negotiability === undefined) return counterOffer === undefined && nonNegotiableBasis === undefined;
+  if (negotiability === "negotiable") {
+    return nonNegotiableBasis === undefined && (counterOffer === undefined || isText(counterOffer));
+  }
+  if (negotiability === "nonNegotiable") return counterOffer === undefined && isSourceSentence(nonNegotiableBasis);
+  return false;
 }
 
 function isSourceSentence(value: unknown): value is SourceSentence {
