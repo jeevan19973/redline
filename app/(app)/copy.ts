@@ -12,6 +12,22 @@ const fileRefusals = {
     "Underline couldn't read that file. It may be damaged or password-protected. Try again, or paste its text below.",
 } as const;
 
+// "5 analyses", or "1 analysis" for a limit of one.
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// The one-time limit per Signer (ADR 0007): what's left, in the rail, and
+// the refusal once it's used. Shared by every action that checks it.
+const limit = {
+  label: "Your limit",
+  analysesLeft: (left: number, limit: number) => `${left} of ${count(limit, "analysis", "analyses")} left`,
+  questionsLeft: (left: number, limit: number) => `${left} of ${count(limit, "question", "questions")} left`,
+  unavailable: "Underline couldn't load how many you have left.",
+  analysisReached: (limit: number) =>
+    `You've reached your limit of ${count(limit, "analysis", "analyses")}, so Underline can't run another. Your Drafts and reports are still here. The person who invited you can raise your limit.`,
+  questionReached: (limit: number) =>
+    `You've reached your limit of ${count(limit, "question", "questions")}, so Underline can't answer another. Your Drafts and reports are still here. The person who invited you can raise your limit.`,
+} as const;
+
 const fileField = {
   label: "Document file",
   hint: "A text-based PDF, a Word file (.docx) or a .txt file. It stays on your computer.",
@@ -20,6 +36,7 @@ const fileField = {
 } as const;
 
 export const copy = {
+  limit,
   rail: {
     label: "Main",
     library: "Library",

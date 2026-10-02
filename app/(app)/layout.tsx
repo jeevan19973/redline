@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../(auth)/actions";
+import { readAllowance } from "./allowance";
 import { copy } from "./copy";
 import { RailLink } from "./rail-link";
 
@@ -19,6 +20,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // layout if the proxy's matcher ever misses a path.
   if (!data?.claims) redirect("/sign-in");
   const email = typeof data.claims.email === "string" ? data.claims.email : undefined;
+  // What is left of the Signer's one-time limit (ADR 0007). Each action that
+  // spends it refreshes the page, so this re-reads after every use.
+  const allowance = await readAllowance(supabase);
 
   return (
     <div className="shell">
@@ -38,9 +42,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </li>
         </ul>
         <div className="rail__foot">
+          <div className="rail__limit">
+            <p className="rail__label">{copy.limit.label}</p>
+            {allowance ? (
+              <ul className="rail__limit-list">
+                <li>{copy.limit.analysesLeft(allowance.analysesLeft, allowance.analysisLimit)}</li>
+                <li>{copy.limit.questionsLeft(allowance.questionsLeft, allowance.questionLimit)}</li>
+              </ul>
+            ) : (
+              <p className="rail__limit-list">{copy.limit.unavailable}</p>
+            )}
+          </div>
           {email && (
             <p className="rail__who">
-              <span className="rail__who-label">{copy.rail.signedInAs}</span>
+              <span className="rail__label rail__who-label">{copy.rail.signedInAs}</span>
               <span className="rail__who-email">{email}</span>
             </p>
           )}

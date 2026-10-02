@@ -85,6 +85,43 @@ A code with `used_at` set is spent. `used_by` is the Signer's id in
 through Studio or the admin API also needs an unused code, as `invite_code`
 in its user metadata.
 
+## Raising a Signer's limit
+
+Each Signer can run 5 analyses (re-runs included) and ask 25 questions,
+once (ADR 0007). The limits live on the Signer's row in `signer_limits`, so
+raising one Signer's limit is a manual change in Studio's SQL editor. Find
+their id by email:
+
+```sql
+select id, email from auth.users where email = 'signer@example.com';
+```
+
+Then raise their limit:
+
+```sql
+update signer_limits set analysis_limit = 10 where owner = '<their id>';
+update signer_limits set question_limit = 50 where owner = '<their id>';
+```
+
+Or both in one step by email:
+
+```sql
+update signer_limits set analysis_limit = 10, question_limit = 50
+  where owner = (select id from auth.users where email = 'signer@example.com');
+```
+
+The new limit takes effect on their next request; the rail shows it the next
+time a page loads. To see what everyone has used:
+
+```sql
+select u.email, l.analyses_used, l.analysis_limit, l.questions_used, l.question_limit
+  from signer_limits l join auth.users u on u.id = l.owner order by u.email;
+```
+
+Signers can read their own row but never write it, and no function they can
+call lowers a count. With no Supabase configured there are no accounts, so
+there is no limit either.
+
 ## Checks
 
 ```sh

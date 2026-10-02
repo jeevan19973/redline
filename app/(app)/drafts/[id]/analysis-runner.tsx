@@ -18,18 +18,24 @@ type Mode =
 // Runs the analysis on a stored Draft through the runAnalysis Server Action
 // and shows it in progress. On success the action re-renders the page with
 // the stored Report; on failure this shows a message and a way to try again,
-// which reuses the stored text.
+// which reuses the stored text. At the analysis limit (ADR 0007) it shows
+// the plain refusal instead, with no way to try again.
 export function AnalysisRunner({ draftId, mode }: { draftId: string; mode: Mode }) {
   const [pending, startTransition] = useTransition();
   const [failed, setFailed] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
   const started = useRef(false);
 
   const run = useCallback(() => {
     setFailed(false);
+    setRefusal(null);
     startTransition(async () => {
       try {
-        const { ok } = await runAnalysis(draftId);
-        if (!ok) setFailed(true);
+        const result = await runAnalysis(draftId);
+        if (!result.ok) {
+          setFailed(true);
+          setRefusal(result.refusal ?? null);
+        }
       } catch (error) {
         // A redirect (signed out, or no accounts) arrives as an error.
         unstable_rethrow(error);
@@ -54,7 +60,12 @@ export function AnalysisRunner({ draftId, mode }: { draftId: string; mode: Mode 
         <p className="analysis__status" role="status">
           {running ? text.pending : ""}
         </p>
-        {failed && (
+        {failed && refusal && (
+          <p className="form-message" role="alert">
+            {refusal}
+          </p>
+        )}
+        {failed && !refusal && (
           <>
             <p className="form-message" role="alert">
               {text.failed}
@@ -92,7 +103,7 @@ export function AnalysisRunner({ draftId, mode }: { draftId: string; mode: Mode 
       </p>
       {failed && !pending && (
         <p className="form-message" role="alert">
-          {mode === "unreadable" ? text.failed : text.rerunFailed}
+          {refusal ?? (mode === "unreadable" ? text.failed : text.rerunFailed)}
         </p>
       )}
     </div>

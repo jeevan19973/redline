@@ -24,6 +24,7 @@ stops early. The final section lists what to run first.
 | 11 Delete a Draft | done | Delete and cascade checked in a rolled-back transaction; dialog checked in headless Chrome |
 | 12 PDF and DOCX upload, with scanned-file refusal | done | Real pdfjs/mammoth exercised in headless Chrome; signed-in form not run |
 | 17 Invite-only sign-up with single-use codes | done | Trigger checked in a rolled-back transaction; real sign-up not run. Every new account, even one made in Studio, needs a code |
+| 18 One-time limit per Signer | done | Limits checked in a rolled-back transaction; rail not seen on screen. Fails closed |
 
 ## Decisions made in your absence
 
