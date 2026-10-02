@@ -223,6 +223,13 @@ button, input { font: inherit; }
   line-height: 1.45;
 }
 
+/* ---------- Accounts not set up ---------- */
+
+/* Shown in place of sign-in and the signed-in app when Supabase is absent. */
+.notice { max-width: 480px; display: grid; gap: 14px; }
+.notice .auth__title { margin-bottom: 14px; }
+.notice__body { font-size: 1.125rem; line-height: 1.5; }
+
 /* ---------- Signed-in shell ---------- */
 
 .shell {

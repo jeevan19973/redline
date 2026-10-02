@@ -3,6 +3,7 @@
 import type { AuthError } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "./copy";
 
@@ -31,7 +32,15 @@ function messageFor(error: AuthError): string {
   }
 }
 
+// With no Supabase there are no accounts. The forms are not shown then, but an
+// action can still be posted, so each one sends the visitor to the sign-in
+// page, which says accounts are not set up.
+function redirectIfAccountsUnavailable() {
+  if (!supabaseConfig()) redirect("/sign-in");
+}
+
 export async function signIn(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  redirectIfAccountsUnavailable();
   const { email, password } = readCredentials(formData);
   if (!email || !password) return { error: copy.errors.missingFields, email };
 
@@ -44,6 +53,7 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
 }
 
 export async function signUp(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  redirectIfAccountsUnavailable();
   const { email, password } = readCredentials(formData);
   if (!email || !password) return { error: copy.errors.missingFields, email };
 
@@ -59,6 +69,7 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
 }
 
 export async function signOut() {
+  redirectIfAccountsUnavailable();
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");

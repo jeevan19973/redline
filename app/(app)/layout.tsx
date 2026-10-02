@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
+import { AccountsUnavailable } from "../_accounts-unavailable/notice";
 import { signOut } from "../(auth)/actions";
 import { copy } from "./copy";
 import { RailLink } from "./rail-link";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // With no Supabase there are no accounts, so no Signer is ever signed in
+  // here. Say so instead of sending them to a sign-in that cannot work.
+  if (!supabaseConfig()) return <AccountsUnavailable />;
+
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   // The proxy already sends signed-out visitors to sign in; this guards the

@@ -31,15 +31,18 @@ You need Node 24, npm and Docker (Docker Desktop must be running).
    ```
 
 3. Create `.env.local` from the template and fill it in. `npm run db:status`
-   prints the API URL and the publishable key.
+   prints the API URL and the keys.
 
    ```sh
    cp .env.example .env.local
    npx supabase status -o env
    ```
 
-   Copy `API_URL` into `NEXT_PUBLIC_SUPABASE_URL` and `PUBLISHABLE_KEY` into
-   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+   Copy `API_URL` into `NEXT_PUBLIC_SUPABASE_URL` and `ANON_KEY` into
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. The app falls back to
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`PUBLISHABLE_KEY`) when the anon key
+   is unset. With no Supabase variables at all, the app still runs, without
+   accounts, the library or Red lines, and you can skip step 2.
 
 4. Start the app and open http://localhost:3000:
 

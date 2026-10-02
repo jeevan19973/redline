@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Dependencies approved for this ticket (2026-09-30):** `next`, `react`, `react-dom`, `typescript`, `@supabase/supabase-js`, `@supabase/ssr`, and the `supabase` CLI as a dev dependency. Anything beyond this list still waits for approval.
 
@@ -20,3 +20,5 @@
 ## Comments
 
 2026-10-01: Built and checked in a browser against local Supabase. Sign-up, sign-in, sign-out, the signed-out redirect and the empty library all work at desktop and phone widths, and no red renders anywhere. Sign-up is open for now; ticket 17 puts it behind an invite code. Not committed yet.
+
+2026-10-01 (unattended build run): Verified and marked done. Follow-up in the same run: `lib/env.ts` now reads `NEXT_PUBLIC_SUPABASE_ANON_KEY` first with the publishable key as fallback, and the app starts and renders with no Supabase variables set, showing a plain "accounts aren't set up" notice on the account pages instead of throwing.
