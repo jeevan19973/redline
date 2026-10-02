@@ -2,7 +2,18 @@
 
 import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { analyzeDraft, displayReport, type Report, type StoredReport } from "@/lib/analysis/index.ts";
+import {
+  analyzeDraft,
+  askDraft,
+  checkQuestion,
+  displayAnswer,
+  displayReport,
+  QUESTION_MAX_LENGTH,
+  type Answer,
+  type Report,
+  type ShownAnswer,
+  type StoredReport,
+} from "@/lib/analysis/index.ts";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { showConfidence, supabaseConfig } from "@/lib/env";
 import { openRouterClient } from "@/lib/model/openrouter.ts";
@@ -153,4 +164,77 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
     console.error("Analysis failed", error instanceof Error ? error.message : error);
     return { error: errors.failed };
   }
+}
+
+export type AskResult = { answer: ShownAnswer } | { error: string };
+
+// The plain message for a question refused before any model call, or null
+// when the question can be asked.
+function questionRefusal(question: unknown): string | null {
+  const checked = checkQuestion(question);
+  if (checked.ok) return null;
+  const errors = copy.question.errors;
+  return checked.problem === "empty" ? errors.empty : errors.tooLong(QUESTION_MAX_LENGTH);
+}
+
+// Runs askDraft and prepares the Answer for the browser. Why a fixed reply
+// was given stays on the server, in the log.
+async function answerFrom(text: string, question: string): Promise<AskResult> {
+  let answer: Answer;
+  try {
+    answer = await askDraft(text, question, openRouterClient());
+  } catch (error) {
+    console.error("A question failed", error instanceof Error ? error.message : error);
+    return { error: copy.question.errors.failed };
+  }
+  if (answer.kind === "doesNotSay" && answer.reason !== "noSupport") {
+    console.error("Gave the fixed reply to a question", answer.reason);
+  }
+  return { answer: displayAnswer(answer) };
+}
+
+// Answers a question about a stored Draft from its stored text, which is
+// loaded here by the Draft's id: the browser sends only the id and the
+// question, never the text. Nothing about the question or the answer is
+// stored. This is the one place a Signer's question reaches the model for a
+// saved Draft, so the question limit (ADR 0007, ticket 18) is checked here,
+// before askDraft. Runs on the server, so the OpenRouter key never reaches
+// the browser.
+export async function askAboutDraft(draftId: unknown, question: unknown): Promise<AskResult> {
+  if (!supabaseConfig()) redirect("/drafts/new");
+  const refused = questionRefusal(question);
+  if (refused) return { error: refused };
+  if (!isDraftId(draftId)) return { error: copy.question.errors.failed };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims) redirect("/sign-in");
+
+  // Row-level security returns nothing for another Signer's Draft.
+  const { data: draft, error } = await supabase
+    .from("drafts")
+    .select("extracted_text")
+    .eq("id", draftId)
+    .maybeSingle<{ extracted_text: string }>();
+  if (error || !draft) {
+    console.error("Could not load a Draft to ask about", error?.code, error?.message);
+    return { error: copy.question.errors.failed };
+  }
+
+  return answerFrom(draft.extracted_text, question as string);
+}
+
+// Answers a question about text analyzed without an account. Only for a
+// copy of Underline with no Supabase, where nothing is stored, so the text
+// the report was made from comes from the browser; with accounts set up,
+// questions are asked about a saved Draft by its id instead.
+export async function askWithoutAccount(text: unknown, question: unknown): Promise<AskResult> {
+  const errors = copy.question.errors;
+  if (supabaseConfig()) return { error: errors.signIn };
+  const refused = questionRefusal(question);
+  if (refused) return { error: refused };
+  if (typeof text !== "string" || !/\S/.test(text) || !fitsInOneSave(question as string, text)) {
+    return { error: errors.failed };
+  }
+  return answerFrom(text, question as string);
 }

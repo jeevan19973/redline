@@ -35,10 +35,17 @@ export const CLEAN_VERDICT = Object.freeze({
 export const GUARANTY_GAP =
   "This text refers to a separate guaranty. That document wasn't added here, so Underline didn't check your personal exposure under it.";
 
-// Every piece of fixed copy, by name, for the banned-claims test. Tickets 10
-// and 16 add the "does not say" reply and the landing page copy here.
+// The question box's reply when the text does not answer the question, or
+// when the answer's Source sentences cannot be verified. It never guesses
+// and never says what the document leaves out means.
+export const DOES_NOT_SAY =
+  "This document doesn't say. Underline found nothing in this text that answers your question.";
+
+// Every piece of fixed copy, by name, for the banned-claims test. Ticket 16
+// adds the landing page copy here.
 export const FIXED_COPY: Readonly<Record<string, string>> = Object.freeze({
   scopeStamp: SCOPE_STAMP,
+  doesNotSay: DOES_NOT_SAY,
   ...Object.fromEntries(Object.entries(CLEAN_VERDICT).map(([name, text]) => [`cleanVerdict.${name}`, text])),
   guarantyGap: GUARANTY_GAP,
   // The clause names the Clean verdict lists as checked.

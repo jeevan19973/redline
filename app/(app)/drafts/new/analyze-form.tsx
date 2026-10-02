@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import type { StoredReport } from "@/lib/analysis/index.ts";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { copy } from "../../copy";
-import { analyzeWithoutAccount } from "../actions";
+import { analyzeWithoutAccount, askWithoutAccount } from "../actions";
 import { isPlainText } from "../plain-text";
 import { DraftReading } from "../draft-reading";
 
@@ -154,6 +154,9 @@ export function AnalyzeForm() {
             textTitle={text.textTitle}
             textIntro={text.textIntro}
             report={result.report}
+            // Nothing is stored here, so the question goes with the exact
+            // text this report was made from.
+            ask={(question) => askWithoutAccount(result.text, question)}
           />
           <p className="analyze__note">{text.notSaved}</p>
         </div>

@@ -740,6 +740,55 @@ button, input { font: inherit; }
 .gap__statement { font-size: 0.9375rem; line-height: 1.5; font-weight: 500; max-width: 60ch; }
 .gap .flag__source { margin-top: 4px; }
 
+/* ---------- Question box ---------- */
+
+/* Under the report, set off by a hairline. The answer sits on paper like a
+   flag, with its Source sentences underlined in ink, never filled. */
+.question {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule-paper);
+  max-width: 72ch;
+}
+.question__form { display: grid; gap: 12px; justify-items: stretch; }
+.question__form .form-message { max-width: 60ch; }
+.question__form .analysis__status { justify-self: start; }
+.question__ask { display: flex; flex-wrap: wrap; gap: 8px; }
+.question__ask input { flex: 1 1 260px; width: auto; }
+.question__ask .button-secondary { min-height: 48px; padding: 0 18px; }
+.question__ask input[readonly] { background: var(--paper-shade); }
+
+.answer {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule-paper);
+  border-left: 2px solid var(--ink);
+  scroll-margin: 24px;
+  outline: none;
+  transition: box-shadow 220ms var(--ease-out), border-color 220ms var(--ease-out);
+}
+.answer:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.answer.is-lit { border-color: var(--thermo-deep); box-shadow: 0 0 0 1px var(--thermo-deep); }
+.answer.is-lit .flag__quote p { text-decoration-thickness: 3px; }
+.answer__title {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.answer__asked { font-size: 0.875rem; line-height: 1.45; color: var(--ink-soft); overflow-wrap: anywhere; }
+.answer__asked-label { font-weight: 600; color: var(--ink); }
+.answer__text { font-size: 0.9375rem; line-height: 1.5; font-weight: 500; max-width: 60ch; }
+.answer__sources { display: grid; gap: 2px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--rule-paper); }
+.answer__sources .flag__source { margin-top: 8px; }
+
 /* ---------- Clean verdict ---------- */
 
 /* Clean Slate gray on pale gray (DESIGN.md): never green, never a

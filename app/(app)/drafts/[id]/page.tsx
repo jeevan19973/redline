@@ -6,6 +6,7 @@ import { showConfidence, supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsUnavailable } from "../../../_accounts-unavailable/notice";
 import { copy } from "../../copy";
+import { askAboutDraft } from "../actions";
 import { draftDate } from "../draft-date";
 import { isDraftId } from "../draft-id";
 import { DraftReading } from "../draft-reading";
@@ -78,6 +79,8 @@ export default async function DraftPage({ params }: Props) {
         report={stored.kind === "report" ? stored.report : null}
         actions={<AnalysisRunner draftId={draft.id} mode="rerun" />}
         showRedLines
+        // Only the Draft's id is bound: the action loads the stored text.
+        ask={askAboutDraft.bind(null, draft.id)}
         pending={<AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />}
       />
     </article>

@@ -110,7 +110,28 @@ export const copy = {
     toggleLabel: "Show",
     report: "Report",
     text: "Draft text",
-    textNote: "Underlined sentences are quoted in the report. Select one to go to where the report quotes it.",
+    textNote: "Underlined sentences are quoted in the report or in an answer to your question. Select one to see where it's quoted.",
+  },
+  // The question box under the report. The "does not say" reply itself is
+  // the Analysis module's fixed template.
+  question: {
+    title: "Ask about this document",
+    intro:
+      "Underline answers only from this text and quotes the sentences it relies on. If the text doesn't answer your question, it says so.",
+    label: "Your question",
+    hint: (max: number) => `Up to ${max} characters. Questions and answers aren't saved.`,
+    submit: "Ask",
+    pending: "Asking",
+    pendingNote: "Looking for the answer in this text.",
+    answerTitle: "Answer",
+    asked: "You asked",
+    sourcesTitle: "Quoted from the document",
+    errors: {
+      empty: "Write a question first.",
+      tooLong: (max: number) => `That question is too long. Keep it to ${max} characters or fewer.`,
+      failed: "Underline couldn't finish answering. Try again.",
+      signIn: "Sign in to ask about a document.",
+    },
   },
   analysis: {
     pending: "Analyzing this Draft. This can take a minute or two.",

@@ -8,10 +8,10 @@ import { brandReport, type Report } from "./report.ts";
 import { SCOPE_STAMP } from "./templates.ts";
 import { cleanVerdictFor } from "./verdict.ts";
 
-// The Analysis module: the one place a Report comes from, and the single
-// test seam (spec, "Analysis module"). Everything that makes a report
-// trustworthy lives behind analyzeDraft. Only this file is public; the rest
-// of lib/analysis/ is internal.
+// The Analysis module: the one place a Report or an Answer comes from, and
+// the single test seam (spec, "Analysis module"). Everything that makes them
+// trustworthy lives behind analyzeDraft and askDraft. Only this file is
+// public; the rest of lib/analysis/ is internal.
 
 export type {
   BasisCitationFailure,
@@ -41,6 +41,17 @@ export { FREE_TEXT_MAX_LENGTH } from "./red-lines.ts";
 export type { ClauseType, Severity } from "./catalog.ts";
 export { CATALOG, clauseTypeLabel, isClauseType } from "./catalog.ts";
 export { FIXED_COPY } from "./templates.ts";
+
+// Answers one question from a Draft's extracted text: either an answer whose
+// Source sentences are all exact substrings of the text, with their offsets,
+// or the fixed "does not say" reply. The fixed reply is given when the model
+// finds no support, gives no answer or no Source sentence, or quotes any
+// sentence that is not in the text exactly; there is no regeneration, so a
+// question costs one model call. An empty or overlong question (see
+// checkQuestion) is rejected before any model call, and so is a failed call
+// or malformed output.
+export type { Answer, DoesNotSayReason, QuestionCheck, ShownAnswer } from "./answer.ts";
+export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./answer.ts";
 
 // Analyzes one Draft's extracted text against the Signer's Red lines: a
 // catalog Red line raises a matching Caution flag to Dangerous, a free-text

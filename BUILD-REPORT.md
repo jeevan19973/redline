@@ -20,6 +20,7 @@ stops early. The final section lists what to run first.
 | 09 Free-text Red lines add flags | done | 130 tests. Added flags use the personal-reach severity rule; 120-character limit |
 | 06 Counter-offers and Non-negotiable clauses | done | 149 tests. Non-negotiable basis must be a verified quote; Copy button not clicked in a real browser |
 | 05 Confidence label behind a switch | done | 163 tests. Switch is UNDERLINE_SHOW_CONFIDENCE=true, off by default |
+| 10 Question box answered only from the document | done | 189 tests. One model call per question, no regeneration; 500-character limit |
 
 ## Decisions made in your absence
 

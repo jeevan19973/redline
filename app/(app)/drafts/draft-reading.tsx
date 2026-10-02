@@ -3,8 +3,10 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { StoredReport } from "@/lib/analysis/index.ts";
 import { copy } from "../copy";
+import type { AskResult } from "./actions";
 import { citedText, type Citing } from "./cited-ranges";
-import { ReportView } from "./report-view";
+import { QuestionBox, type Asked } from "./question-box";
+import { ReportView, type FlagLinking } from "./report-view";
 
 const text = copy.reading;
 
@@ -13,9 +15,11 @@ type Pane = "report" | "text";
 const NOTHING_CITED: readonly Citing[] = [];
 
 // The element id of what quotes the text, by its index in `citing`: a Risk
-// flag (flag-1, flag-2, ...) or, after the flags, the guaranty gap.
-export function citingId(index: number, flagCount: number): string {
-  return index < flagCount ? `flag-${index + 1}` : "guaranty-gap";
+// flag (flag-1, flag-2, ...), then the guaranty gap when there is one, then
+// the question box's answer.
+export function citingId(index: number, flagCount: number, hasGap: boolean): string {
+  if (index < flagCount) return `flag-${index + 1}`;
+  return hasGap && index === flagCount ? "guaranty-gap" : "answer";
 }
 
 // A Draft's text and its report side by side (app shell brief): the text on
@@ -25,7 +29,9 @@ export function citingId(index: number, flagCount: number): string {
 // a toggle between them.
 //
 // With no report yet, `pending` takes the report's place (the analysis in
-// progress, or a way to run it).
+// progress, or a way to run it). With `ask`, the question box sits under
+// the report, and an answer's Source sentences are underlined in the text
+// and linked like a flag's. The answer lives only in this component's state.
 export function DraftReading({
   documentText,
   textTitle,
@@ -34,6 +40,7 @@ export function DraftReading({
   actions,
   pending,
   showRedLines = false,
+  ask,
 }: {
   documentText: string;
   textTitle: string;
@@ -44,26 +51,36 @@ export function DraftReading({
   // Whether the report lists the Red lines it ran against: only on a
   // Signer's saved Draft, since without accounts there are none.
   showRedLines?: boolean;
+  // Runs a question about this text on the server.
+  ask?: (question: string) => Promise<AskResult>;
 }) {
   const [pane, setPane] = useState<Pane>("report");
   // The flags lit by whatever the Signer is hovering or focusing.
   const [lit, setLit] = useState<readonly number[]>([]);
   // An element to scroll to and focus once the pane holding it is showing.
   const [jump, setJump] = useState<string | null>(null);
+  // The last question asked and its answer, never stored.
+  const [asked, setAsked] = useState<Asked | null>(null);
 
   // The flags, then the guaranty gap's sentence when there is one. A
   // Non-negotiable flag's basis sentence is placed after its Source
   // sentences, so it is underlined in the text and linked to its flag too.
+  // An answer's Source sentences come last.
   const flagCount = report?.riskFlags?.length ?? 0;
+  const hasGap = report?.guarantyGap !== undefined;
+  const answerIndex = flagCount + (hasGap ? 1 : 0);
   const citing = useMemo(() => {
-    if (!report) return NOTHING_CITED;
-    const flags: readonly Citing[] = (report.riskFlags ?? []).map((flag) => ({
+    const flags: readonly Citing[] = (report?.riskFlags ?? []).map((flag) => ({
       sourceSentences: flag.nonNegotiableBasis
         ? [...flag.sourceSentences, flag.nonNegotiableBasis]
         : flag.sourceSentences,
     }));
-    return report.guarantyGap ? [...flags, { sourceSentences: [report.guarantyGap.sourceSentence] }] : flags;
-  }, [report]);
+    const fromReport = report?.guarantyGap
+      ? [...flags, { sourceSentences: [report.guarantyGap.sourceSentence] }]
+      : flags;
+    if (asked?.answer.kind !== "answered") return fromReport.length > 0 ? fromReport : NOTHING_CITED;
+    return [...fromReport, { sourceSentences: asked.answer.sourceSentences }];
+  }, [report, asked]);
   const cited = useMemo(() => citedText(documentText, citing), [documentText, citing]);
 
   useEffect(() => {
@@ -81,6 +98,13 @@ export function DraftReading({
     setJump(id);
   }
 
+  const linking: FlagLinking = {
+    lit,
+    light: (index) => setLit(index === null ? [] : [index]),
+    targets: cited.targets,
+    showInText: (id) => go("text", id),
+  };
+
   const isLit = (indexes: readonly number[]) => indexes.some((index) => lit.includes(index));
 
   const pieces: React.ReactNode[] = [];
@@ -89,14 +113,14 @@ export function DraftReading({
     if (range.start > cursor) {
       pieces.push(<Fragment key={`text-${cursor}`}>{documentText.slice(cursor, range.start)}</Fragment>);
     }
-    const first = citingId(range.flags[0], flagCount);
+    const first = citingId(range.flags[0], flagCount, hasGap);
     pieces.push(
       <a
         key={range.id}
         id={range.id}
         className={`cited${isLit(range.flags) ? " is-lit" : ""}`}
         href={`#${first}`}
-        aria-describedby={range.flags.map((index) => `${citingId(index, flagCount)}-name`).join(" ")}
+        aria-describedby={range.flags.map((index) => `${citingId(index, flagCount, hasGap)}-name`).join(" ")}
         onClick={(event) => {
           event.preventDefault();
           go("report", first);
@@ -141,12 +165,7 @@ export function DraftReading({
             report={report}
             actions={actions}
             showRedLines={showRedLines}
-            linking={{
-              lit,
-              light: (index) => setLit(index === null ? [] : [index]),
-              targets: cited.targets,
-              showInText: (id) => go("text", id),
-            }}
+            linking={linking}
           />
         ) : (
           <section className="report" aria-labelledby="report-title">
@@ -158,6 +177,7 @@ export function DraftReading({
             <div>{pending}</div>
           </section>
         )}
+        {ask && <QuestionBox ask={ask} asked={asked} onAsked={setAsked} index={answerIndex} linking={linking} />}
       </div>
     </div>
   );

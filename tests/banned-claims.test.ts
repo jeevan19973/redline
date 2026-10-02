@@ -15,6 +15,10 @@ describe("banned claims", () => {
     for (const text of Object.values(FIXED_COPY)) expect(text.trim()).not.toBe("");
   });
 
+  it.each(["scopeStamp", "doesNotSay"])("includes the %s template", (name) => {
+    expect(FIXED_COPY).toHaveProperty(name);
+  });
+
   it.each(Object.entries(FIXED_COPY))("%s says nothing banned", (_name, text) => {
     expect(bannedClaimsIn(text)).toEqual([]);
   });

@@ -167,3 +167,18 @@ function replaceOnce(sentence: string, from: string, to: string): string {
   if (!sentence.includes(from)) throw new Error(`The sentence has no ${JSON.stringify(from)} to replace.`);
   return sentence.replace(from, to);
 }
+
+// What the model would return for a question: whether the document answers
+// it, the answer, and the sentences it relies on, quoted as given.
+export function answerPayload(answer: {
+  documentAnswers: boolean;
+  answer: string;
+  sourceSentences: string[];
+}): Record<string, unknown> {
+  return { ...answer };
+}
+
+// What the model would return when the document does not answer a question.
+export function noSupportPayload(): Record<string, unknown> {
+  return answerPayload({ documentAnswers: false, answer: "", sourceSentences: [] });
+}

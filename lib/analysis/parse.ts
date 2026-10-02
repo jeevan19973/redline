@@ -86,6 +86,26 @@ export function parseCounterOffer(data: unknown): string {
   return counterOffer;
 }
 
+// The model's answer to a question: whether the text answers it, the answer,
+// and the sentences it relies on, taken exactly as given. An empty answer or
+// list is allowed here; askDraft turns either into the fixed reply.
+export type ModelQuestionAnswer = {
+  documentAnswers: boolean;
+  answer: string;
+  sourceSentences: string[];
+};
+
+export function parseQuestionAnswer(data: unknown): ModelQuestionAnswer {
+  const { documentAnswers, answer, sourceSentences } = asObject(data, "the answer");
+  if (typeof documentAnswers !== "boolean") throw new MalformedModelOutput("documentAnswers is not true or false");
+  if (typeof answer !== "string") throw new MalformedModelOutput("answer is not text");
+  return {
+    documentAnswers,
+    answer,
+    sourceSentences: parseSentences(sourceSentences, "sourceSentences", { allowEmpty: true }),
+  };
+}
+
 // A catalog flag, or a flag the model says a free-text Red line produced:
 // clause type "redLine" and that Red line's id. The id is matched to the Red
 // lines passed in later, in flags.ts. A catalog flag's redLineId, which the

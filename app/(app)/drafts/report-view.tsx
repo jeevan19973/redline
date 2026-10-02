@@ -311,8 +311,9 @@ function FlagSlate({
 }
 
 // A sentence quoted from the text, underlined in ink, with a link to where
-// it sits in the Draft text when it can be placed there.
-function Quoted({
+// it sits in the Draft text when it can be placed there. Shared by the
+// flags, the guaranty gap and the question box's answers.
+export function Quoted({
   sentence,
   target,
   linking,
