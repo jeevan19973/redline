@@ -1,0 +1,371 @@
+/* Underline app. World: Depth of Reach (see DESIGN.md). Red is reserved for
+   the Dangerous severity label (ADR 0006) and appears nowhere in this file. */
+
+@font-face {
+  font-family: "Sofia Sans";
+  src: url("/fonts/sofia-sans.woff2") format("woff2");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sofia Sans";
+  src: url("/fonts/sofia-sans-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sofia Sans Extra Condensed";
+  src: url("/fonts/sofia-sans-extra-condensed.woff2") format("woff2");
+  font-weight: 500 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Azeret Mono";
+  src: url("/fonts/azeret-mono.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Surface: ink on paper (ADR 0006) */
+  --paper: #FAF9F7;
+  --paper-shade: #F0EEE9;
+  --ink: #14161A;
+  --ink-soft: #464B53;
+  --rule-paper: #D9D6CF;
+
+  /* Water, stepped by depth */
+  --water-1: #1C4766;
+  --water-2: #13314A;
+  --water-3: #0D2236;
+  --water-4: #081626;
+  --water-5: #050A14;
+  --snow: #E9EEF3;
+  --snow-soft: #A9BACA;
+  --rule-water: rgba(169, 186, 202, 0.28);
+
+  /* The one brand accent */
+  --thermo: #23D6E6;
+  --thermo-bright: #4FE3EF;
+  --thermo-deep: #10A9B8;
+
+  --display: "Sofia Sans Extra Condensed", "Arial Narrow", sans-serif;
+  --sans: "Sofia Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Azeret Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --wrap: 1360px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-slate: 0 16px 30px -14px rgba(0, 0, 0, 0.6);
+
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  caret-color: var(--thermo-deep);
+}
+
+::selection { background: var(--thermo); color: var(--ink); }
+
+h1, h2, h3, p, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+button, input { font: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.water :focus-visible { outline-color: var(--thermo); }
+
+.skip {
+  position: absolute; left: 12px; top: 12px; z-index: 20;
+  transform: translateY(-64px);
+  padding: 10px 14px; background: var(--ink); color: var(--paper);
+  font: 600 0.875rem/1 var(--sans); text-decoration: none;
+  transition: transform 160ms var(--ease-out);
+}
+.skip:focus { transform: translateY(0); }
+
+.wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- Shared pieces from the landing page ---------- */
+
+.wordmark {
+  display: inline-block;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink);
+  padding-bottom: 6px;
+  border-bottom: 3px solid var(--thermo-deep);
+}
+.wordmark--water { color: var(--snow); border-bottom-color: var(--thermo); }
+
+.link {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule-paper);
+  transition: text-decoration-color 160ms var(--ease-out);
+}
+.link:hover { text-decoration-color: currentColor; }
+
+/* The one action */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 22px;
+  background: var(--thermo);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 180ms var(--ease-out), transform 180ms var(--ease-out);
+}
+.action:hover { background: var(--thermo-bright); transform: translateY(-1px); }
+.action:active { transform: translateY(0); }
+.action:disabled { cursor: progress; transform: none; background: var(--thermo); opacity: 0.7; }
+
+/* ---------- Top bar (signed-out pages) ---------- */
+
+.topbar {
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule-paper);
+}
+.topbar__inner {
+  display: flex;
+  align-items: center;
+  min-height: 68px;
+}
+
+/* ---------- Sign in and sign up ---------- */
+
+.auth {
+  padding: clamp(48px, 10vh, 104px) var(--gutter) 72px;
+}
+.auth__panel {
+  max-width: 400px;
+  margin-inline: auto;
+}
+.auth__title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(2.5rem, 4.2vw, 3.25rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.auth-form { display: grid; gap: 20px; }
+.auth-form .action { width: 100%; margin-top: 4px; }
+.auth-form__switch { font-size: 0.9375rem; color: var(--ink-soft); }
+.auth-form__switch .link { color: var(--ink); }
+
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 600; font-size: 0.9375rem; }
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: 0;
+  font-size: 1rem;
+}
+.field input:focus-visible { border-color: var(--ink); }
+.field__hint { font-size: 0.875rem; color: var(--ink-soft); }
+
+/* Errors and notices are ink on paper. Red means Dangerous and nothing else. */
+.form-message {
+  padding: 12px 14px;
+  background: var(--paper-shade);
+  border: 1px solid var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+/* ---------- Signed-in shell ---------- */
+
+.shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--water-2);
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 24px 20px;
+  background: var(--water-4);
+  color: var(--snow);
+  border-right: 1px solid var(--rule-water);
+}
+.rail .wordmark { align-self: flex-start; }
+
+.rail__list { display: grid; gap: 2px; }
+.rail__link {
+  display: block;
+  padding: 10px 12px;
+  border-left: 2px solid transparent;
+  color: var(--snow-soft);
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.rail__link:hover { color: var(--snow); background: rgba(169, 186, 202, 0.1); }
+.rail__link[aria-current="page"] { color: var(--snow); border-left-color: var(--thermo); }
+
+.rail__foot {
+  margin-top: auto;
+  display: grid;
+  gap: 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule-water);
+}
+.rail__who { display: grid; gap: 4px; }
+.rail__who-label {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--snow-soft);
+}
+.rail__who-email { font-size: 0.875rem; color: var(--snow); overflow-wrap: anywhere; }
+.rail__signout {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--snow);
+  border: 1px solid var(--snow-soft);
+  border-radius: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out);
+}
+.rail__signout:hover { background: rgba(169, 186, 202, 0.12); }
+
+.shell__main {
+  padding: clamp(20px, 3vw, 40px);
+}
+
+/* A paper pane in the water: every reading surface sits on paper (ADR 0006). */
+.pane {
+  max-width: 1040px;
+  min-height: calc(100dvh - 2 * clamp(20px, 3vw, 40px));
+  padding: clamp(24px, 3vw, 40px);
+  background: var(--paper);
+  box-shadow: var(--shadow-slate);
+}
+.pane__head {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rule-paper);
+}
+.pane__title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(2.25rem, 3.4vw, 3rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.empty {
+  display: grid;
+  gap: 8px;
+  max-width: 46ch;
+  padding: 56px 0;
+}
+.empty__title { font-weight: 700; font-size: 1.1875rem; line-height: 1.3; }
+.empty__body { color: var(--ink-soft); }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    padding: 14px var(--gutter);
+    border-right: 0;
+    border-bottom: 1px solid var(--rule-water);
+  }
+  .rail .wordmark { font-size: 1.375rem; padding-bottom: 4px; }
+  .rail__list { display: flex; gap: 4px; }
+  .rail__link { border-left: 0; border-bottom: 2px solid transparent; padding: 8px 4px; }
+  .rail__link[aria-current="page"] { border-bottom-color: var(--thermo); }
+  .rail__foot {
+    margin-top: 0;
+    margin-left: auto;
+    padding-top: 0;
+    border-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .rail__who-label { display: none; }
+  .pane { min-height: 0; }
+}
+
+@media (max-width: 560px) {
+  .rail__who { display: none; }
+  .shell__main { padding: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
+}

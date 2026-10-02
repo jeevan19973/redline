@@ -4,7 +4,7 @@ Agent 4 research: willingness to pay for Redline, by segment.
 
 ## Method
 
-12 web searches run (the guardrail maximum), 2 pages fetched in full (the redlineapp.net pricing comparison and the California Bar small business justice gap study). Search topics covered: flat-fee attorney contract review pricing, LegalZoom/Rocket Lawyer attorney-review add-ons, freelancer pain points, small business legal spend/justice gap data, startup SAFE and term sheet legal costs, non-compete and offer letter review costs, renter/tenant legal aid, creator brand-deal review costs, terms-and-conditions reading behaviour, ChatGPT-as-substitute-for-lawyer evidence, freelancer nonpayment statistics, and consumer AI contract review app pricing. Stopped once 8+ distinct sourced findings were collected per segment area and the search cap was reached.
+12 web searches run (the guardrail maximum), 2 pages fetched in full (the redlineapp.net pricing comparison and the California Bar small business justice gap study). Search topics covered: flat-fee attorney contract review pricing, LegalZoom/Rocket Lawyer attorney-review add-ons, freelancer pain points, small business legal spend/justice gap data, startup SAFE and term sheet legal costs, non-compete and offer letter review costs, renter/tenant legal aid, creator brand-deal review costs, terms-and-conditions reading behavior, ChatGPT-as-substitute-for-lawyer evidence, freelancer nonpayment statistics, and consumer AI contract review app pricing. Stopped once 8+ distinct sourced findings were collected per segment area and the search cap was reached.
 
 ## Segment-by-segment findings
 
@@ -28,7 +28,7 @@ Agent 4 research: willingness to pay for Redline, by segment.
 
 - Flat fees for lease-related legal work range from $500 to $5,000 depending on complexity, though this figure covers drafting as well as review and is not renter-specific. Source: [legalmatch.com](https://www.legalmatch.com/law-library/article/how-much-does-a-landlord-tenant-lawyer-cost.html)
 - The renter segment is heavily served by free and low-cost channels rather than paid review: LawHelp.org, Law Help Interactive, ABA Free Legal Answers, and law-school tenant clinics all provide free lease and eviction assistance, typically means-tested toward low- and moderate-income renters. Source: [findlaw.com](https://www.findlaw.com/realestate/landlord-tenant-law/get-legal-help-with-a-tenants-rights-issue.html)
-- No direct evidence was found of renters paying out of pocket specifically for pre-signature lease review (as opposed to post-dispute eviction defence), which is a meaningful gap, flagged below.
+- No direct evidence was found of renters paying out of pocket specifically for pre-signature lease review (as opposed to post-dispute eviction defense), which is a meaningful gap, flagged below.
 
 ### Startup founders signing term sheets and SAFEs
 

@@ -90,7 +90,7 @@ A survey cited in search results found 58% of 160+ in-house lawyers already use 
 Source: [How to use ChatGPT for contract review - Juro](https://juro.com/learn/chatgpt-contract-review), [Can ChatGPT Effectively Analyze Lease Agreements - Spellbook](https://spellbook.com/learn/chatgpt-for-lease-agreement-analysis)
 
 ### 15. tosdr.org (Terms of Service; Didn't Read)
-Not a contract-review tool for an individual's own document. It is a volunteer-run project, started in 2012, that grades standard, publicly posted terms of service and privacy policies (Netflix, Facebook, etc.) from A to E, with each clause tagged positive, negative, blocker, or neutral, plus a browser extension that shows a site's grade while browsing. Free. Relevant to Redline mainly as evidence that plain-English, clause-level grading of legal text has consumer demand, but it works on generic, pre-catalogued documents, not a user's own uploaded contract.
+Not a contract-review tool for an individual's own document. It is a volunteer-run project, started in 2012, that grades standard, publicly posted terms of service and privacy policies (Netflix, Facebook, etc.) from A to E, with each clause tagged positive, negative, blocker, or neutral, plus a browser extension that shows a site's grade while browsing. Free. Relevant to Redline mainly as evidence that plain-English, clause-level grading of legal text has consumer demand, but it works on generic, pre-cataloged documents, not a user's own uploaded contract.
 Source: [ToS;DR About](https://tosdr.org/en/about), [Terms of Service; Didn't Read - Wikipedia](https://en.wikipedia.org/wiki/Terms_of_Service;_Didn't_Read)
 
 ### 16. Tenant/lease-review cluster: LeaseGuard AI, SaferLease, goHeather, Justee, LeaseLogic
