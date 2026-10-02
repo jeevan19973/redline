@@ -1,0 +1,65 @@
+{
+  "document": "adhesion-contract.txt",
+  "documentType": "commercialLease",
+  "description": "Synthetic landlord standard-form retail lease with a small LLC Tenant and its individual Principal, eight planted clauses and a reference to a separate guaranty.",
+  "nonNegotiableBasis": "This Lease is Landlord's standard form of lease for the Wexmoor Commons Building, and its terms are not subject to negotiation or modification.",
+  "guarantyReference": "Tenant's obligations under this Lease are guaranteed by Principal under a separate Guaranty of Lease dated the same date as this Lease.",
+  "clauses": [
+    {
+      "id": "auto-renewal-short-window",
+      "clauseType": "autoRenewal",
+      "sentence": "This Lease automatically renews for successive three-year terms on the same terms unless Tenant gives Landlord written notice of non-renewal no earlier than 120 days and no later than 90 days before the end of the then-current term.",
+      "expectedSeverity": "Caution",
+      "why": "A missed 30-day window locks the business into another term, but the exposure stays with the business."
+    },
+    {
+      "id": "late-charge-and-interest",
+      "clauseType": "lateFees",
+      "sentence": "If any Rent is not received by the fifth day of the month, Tenant shall pay a late charge equal to fifteen percent of the overdue amount plus interest at eighteen percent per year until paid.",
+      "expectedSeverity": "Caution",
+      "why": "The penalty is charged to the Tenant LLC and does not reach the Principal personally."
+    },
+    {
+      "id": "deposit-applied-at-landlord-discretion",
+      "clauseType": "depositAndRepairs",
+      "sentence": "Landlord may apply all or any part of the Security Deposit to any repair, cleaning or restoration that Landlord in its sole discretion deems necessary, and Tenant shall replenish the Security Deposit within five days after demand.",
+      "expectedSeverity": "Caution",
+      "why": "The business can lose its deposit on terms the Landlord controls, a business cost rather than a personal one."
+    },
+    {
+      "id": "unilateral-amendment-by-notice",
+      "clauseType": "unilateralAmendment",
+      "sentence": "Landlord may amend the Rules and Regulations or any other term of this Lease at any time by written notice to Tenant, and each amendment takes effect on the date stated in the notice.",
+      "expectedSeverity": "Caution",
+      "why": "The Landlord can change terms after signing, but the clause itself does not reach the Principal's own assets."
+    },
+    {
+      "id": "tenant-pays-structural-repairs",
+      "clauseType": "depositAndRepairs",
+      "sentence": "Tenant shall, at Tenant's sole cost, make all repairs and replacements to the Premises, including the roof, structure and building systems serving the Premises, using contractors approved by Landlord.",
+      "expectedSeverity": "Caution",
+      "why": "The business pays for roof, structure and systems through Landlord-approved contractors, a cost borne by the LLC."
+    },
+    {
+      "id": "principal-uncapped-indemnity",
+      "clauseType": "uncappedIndemnity",
+      "sentence": "Tenant and Principal, jointly and severally and in Principal's individual capacity, shall indemnify, defend and hold harmless Landlord and its agents from and against any and all claims, losses, damages, fines, costs and attorneys' fees arising from Tenant's use or occupancy of the Premises, without limit as to amount.",
+      "expectedSeverity": "Dangerous",
+      "why": "The individual Principal indemnifies without a cap, so the exposure reaches past the LLC to the Signer personally."
+    },
+    {
+      "id": "principal-radius-non-compete",
+      "clauseType": "individualNonCompete",
+      "sentence": "During the Term and for two years after it ends, Principal shall not personally own, operate, manage or be employed by any retail business selling goods similar to those sold at the Premises within a five-mile radius of the Building.",
+      "expectedSeverity": "Dangerous",
+      "why": "It binds the Principal as a person, limiting their own work and future businesses, not just this LLC."
+    },
+    {
+      "id": "arbitration-with-class-waiver",
+      "clauseType": "arbitrationClassWaiver",
+      "sentence": "Any dispute arising out of this Lease shall be resolved by binding arbitration administered by a single arbitrator, and Tenant waives any right to bring or participate in any class or collective action against Landlord.",
+      "expectedSeverity": "Caution",
+      "why": "It takes away court and class actions, a right rather than personal assets, so it stays Caution under the test."
+    }
+  ]
+}
