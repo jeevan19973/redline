@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { askDraft, displayAnswer, FIXED_COPY, QUESTION_MAX_LENGTH, type Answer } from "../lib/analysis/index.ts";
 import { fakeModelClient } from "./support/fake-model-client.ts";
-import { answerPayload, loadFixture, noSupportPayload, PERTURBATIONS, plantedClause } from "./support/fixtures.ts";
+import {
+  answerPayload,
+  loadFixture,
+  noSupportPayload,
+  PERTURBATIONS,
+  plantedClause,
+  requotePayload,
+} from "./support/fixtures.ts";
 
 const lease = loadFixture("adhesion-contract");
 
@@ -74,35 +81,108 @@ describe("askDraft: the fixed \"does not say\" reply", () => {
     expect(client.calls).toBe(1);
   });
 
-  it("gives the fixed reply when the model reports support but writes no answer", async () => {
+  it("gives the fixed reply when the model reports support but writes no answer, with no regeneration", async () => {
     const data = answerPayload({ documentAnswers: true, answer: "  ", sourceSentences: [lateCharge.sentence] });
-    expectDoesNotSay(await askDraft(lease.text, question, fakeModelClient({ data })));
+    const client = fakeModelClient({ data });
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(1);
   });
 
+  it("gives the fixed reply with no regeneration when the model reports no support, even with a misquoted sentence", async () => {
+    const data = answerPayload({
+      documentAnswers: false,
+      answer: "",
+      sourceSentences: [PERTURBATIONS[0][1](repairs.sentence)],
+    });
+    const client = fakeModelClient({ data });
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(1);
+  });
+});
+
+describe("askDraft: one regeneration for a failed Source sentence", () => {
   describe.each(PERTURBATIONS)("a Source sentence with %s", (_case, perturb) => {
-    it("gives the fixed reply, with no regeneration call", async () => {
-      const wrong = perturb(repairs.sentence);
+    const wrong = perturb(repairs.sentence);
+
+    it("returns the answer with the corrected sentence and its offset when the regeneration quotes it exactly", async () => {
       expect(lease.text).not.toContain(wrong);
-      const client = fakeModelClient({ data: answered([wrong]) });
+      const client = fakeModelClient({ data: answered([wrong]) }, { data: requotePayload([repairs.sentence]) });
+      const answer = await askDraft(lease.text, "Who pays for roof repairs?", client);
+
+      expect(client.calls).toBe(2);
+      expect(answer.kind).toBe("answered");
+      if (answer.kind !== "answered") return;
+      expect(answer.text).toBe(answerText);
+      expect(answer.sourceSentences).toEqual([{ text: repairs.sentence, offset: lease.text.indexOf(repairs.sentence) }]);
+      const [sentence] = answer.sourceSentences;
+      expect(lease.text.slice(sentence.offset, sentence.offset + sentence.text.length)).toBe(repairs.sentence);
+    });
+
+    it("gives the fixed reply when the regeneration quotes it wrong again", async () => {
+      const client = fakeModelClient({ data: answered([wrong]) }, { data: requotePayload([wrong]) });
       expectDoesNotSay(await askDraft(lease.text, "Who pays for roof repairs?", client));
-      expect(client.calls).toBe(1);
+      expect(client.calls).toBe(2);
     });
   });
 
-  it("gives the fixed reply when one of several Source sentences fails verification", async () => {
-    const data = answered([lateCharge.sentence, PERTURBATIONS[0][1](repairs.sentence)]);
-    expectDoesNotSay(await askDraft(lease.text, question, fakeModelClient({ data })));
+  it("returns every sentence the regeneration quotes when one of several failed", async () => {
+    const wrong = PERTURBATIONS[0][1](repairs.sentence);
+    const client = fakeModelClient(
+      { data: answered([lateCharge.sentence, wrong]) },
+      { data: requotePayload([lateCharge.sentence, repairs.sentence]) },
+    );
+    const answer = await askDraft(lease.text, question, client);
+    expect(client.calls).toBe(2);
+    expect(answer.kind).toBe("answered");
+    if (answer.kind !== "answered") return;
+    expect(answer.sourceSentences).toEqual(
+      [lateCharge.sentence, repairs.sentence]
+        .map((text) => ({ text, offset: lease.text.indexOf(text) }))
+        .sort((a, b) => a.offset - b.offset),
+    );
   });
 
-  it("gives the fixed reply for a blank Source sentence", async () => {
-    expectDoesNotSay(await askDraft(lease.text, question, fakeModelClient({ data: answered([" "]) })));
+  it("gives the fixed reply when the regeneration fixes one of several sentences but not the other", async () => {
+    const wrong = PERTURBATIONS[0][1](repairs.sentence);
+    const client = fakeModelClient(
+      { data: answered([lateCharge.sentence, wrong]) },
+      { data: requotePayload([lateCharge.sentence, wrong]) },
+    );
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(2);
   });
 
-  it("gives the fixed reply for a sentence that is in another document but not this one", async () => {
+  it("gives the fixed reply when the regeneration finds no sentences", async () => {
+    const client = fakeModelClient({ data: answered([" "]) }, { data: requotePayload([]) });
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(2);
+  });
+
+  it("gives the fixed reply for a sentence that is in another document but not this one, still missing after the regeneration", async () => {
     const clean = loadFixture("clean-agreement");
     const elsewhere = clean.text.split("\n").find((line) => line.trim().length > 40 && !lease.text.includes(line));
     expect(elsewhere).toBeDefined();
-    expectDoesNotSay(await askDraft(lease.text, question, fakeModelClient({ data: answered([elsewhere!]) })));
+    const client = fakeModelClient({ data: answered([elsewhere!]) }, { data: requotePayload([elsewhere!]) });
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+  });
+
+  it("gives the fixed reply, not an error, when the regeneration call fails", async () => {
+    const client = fakeModelClient(
+      { data: answered([PERTURBATIONS[0][1](repairs.sentence)]) },
+      { error: new Error("The provider is down.") },
+    );
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(2);
+  });
+
+  it.each([
+    ["not an object", "sentences"],
+    ["sourceSentences missing", {}],
+    ["a sentence not text", { sourceSentences: [7] }],
+  ])("gives the fixed reply, not an error, when the regeneration's output is malformed: %s", async (_case, data) => {
+    const client = fakeModelClient({ data: answered([PERTURBATIONS[0][1](repairs.sentence)]) }, { data });
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(2);
   });
 });
 

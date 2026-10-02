@@ -253,3 +253,7 @@ code).
   and never starts an analysis. A per-Draft claim
   (`20261002170000_analysis_claims.sql`) lets only one run at a time reach
   the model, so two tabs on a new Draft spend one analysis.
+- Fix 1: an answer whose Source sentences fail verification now gets one
+  regeneration call, through the same `locateWithRequote` loop flags use. If
+  it still fails, or that call fails, the Signer gets the fixed "does not
+  say" reply. It still counts as one question.

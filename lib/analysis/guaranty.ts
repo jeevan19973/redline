@@ -1,5 +1,5 @@
 import type { ModelClient } from "../model/port.ts";
-import { ATTEMPTS, locateAll } from "./citations.ts";
+import { ATTEMPTS, locateWithRequote } from "./citations.ts";
 import { parseGuarantyRequote } from "./parse.ts";
 import { guarantyRequoteRequest } from "./prompt.ts";
 import type { GuarantyCitationFailure, GuarantyGap } from "./report.ts";
@@ -27,24 +27,21 @@ export async function verifyGuaranty(
 ): Promise<VerifiedGuaranty> {
   if (reference === null) return { kind: "none" };
 
-  let sentence = reference;
-  let located = locateAll(extractedText, [sentence]);
+  // As with a flag, a failure of the regeneration call itself rejects the
+  // whole analysis.
+  const located = await locateWithRequote(extractedText, [reference], async () => {
+    const { data } = await modelClient.complete(guarantyRequoteRequest(extractedText, reference));
+    return [parseGuarantyRequote(data)];
+  });
   if (!located.ok) {
-    // As with a flag, a failure of the regeneration call itself rejects the
-    // whole analysis.
-    const { data } = await modelClient.complete(guarantyRequoteRequest(extractedText, sentence));
-    sentence = parseGuarantyRequote(data);
-    located = locateAll(extractedText, [sentence]);
-    if (!located.ok) {
-      return {
-        kind: "withheld",
-        citationFailure: {
-          guarantyReference: { sourceSentence: reference },
-          failedSentences: located.failed,
-          attempts: ATTEMPTS,
-        },
-      };
-    }
+    return {
+      kind: "withheld",
+      citationFailure: {
+        guarantyReference: { sourceSentence: reference },
+        failedSentences: located.failed,
+        attempts: ATTEMPTS,
+      },
+    };
   }
 
   return { kind: "gap", guarantyGap: { statement: GUARANTY_GAP, sourceSentence: located.sentences[0] } };

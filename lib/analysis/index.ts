@@ -45,11 +45,11 @@ export { FIXED_COPY } from "./templates.ts";
 // Answers one question from a Draft's extracted text: either an answer whose
 // Source sentences are all exact substrings of the text, with their offsets,
 // or the fixed "does not say" reply. The fixed reply is given when the model
-// finds no support, gives no answer or no Source sentence, or quotes any
-// sentence that is not in the text exactly; there is no regeneration, so a
-// question costs one model call. An empty or overlong question (see
-// checkQuestion) is rejected before any model call, and so is a failed call
-// or malformed output.
+// finds no support or gives no answer or no Source sentence (one model call),
+// or quotes a sentence that is not in the text exactly even after one
+// regeneration call, or that call fails. An empty or overlong question (see
+// checkQuestion) is rejected before any model call, and a failed first call
+// or malformed output from it rejects too.
 export type { Answer, DoesNotSayReason, QuestionCheck, ShownAnswer } from "./answer.ts";
 export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./answer.ts";
 

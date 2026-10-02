@@ -1,15 +1,17 @@
 import type { ModelClient } from "../model/port.ts";
-import { locateAll } from "./citations.ts";
-import { parseQuestionAnswer } from "./parse.ts";
-import { questionRequest } from "./prompt.ts";
+import { locateWithRequote, type Located } from "./citations.ts";
+import { parseQuestionAnswer, parseRequote } from "./parse.ts";
+import { answerRequoteRequest, questionRequest } from "./prompt.ts";
 import type { SourceSentence } from "./report.ts";
 import { DOES_NOT_SAY } from "./templates.ts";
 
 // The question box (spec, "Question box"): an answer drawn only from the
 // Draft's text, resting on Source sentences verified by the same
 // exact-substring rule as a Risk flag's (ADR 0001), or the fixed "does not
-// say" reply. Unlike a flag, an answer gets no regeneration: a failed
-// citation gives the fixed reply, which keeps a question to one model call.
+// say" reply. As with a flag, an answer whose Source sentences fail gets one
+// regeneration request to quote them again; if they still fail, or that call
+// fails, the Signer gets the fixed reply. No support, no answer or no Source
+// sentence gives the fixed reply at once, with no regeneration.
 
 // The longest question, in characters as a reader counts them (not UTF-16
 // code units), after leading and trailing spaces are dropped. Long enough
@@ -38,8 +40,11 @@ export type DoesNotSayReason =
   | "noSupport"
   // The model said it does, but gave no answer or no Source sentence.
   | "unsupportedAnswer"
-  // A Source sentence is not in the text exactly as quoted.
-  | "citationFailed";
+  // A Source sentence is not in the text exactly as quoted, even after one
+  // regeneration.
+  | "citationFailed"
+  // The regeneration call failed, or its output was malformed.
+  | "requoteFailed";
 
 // An answer as the Signer sees it: plain data for display. Holding one is
 // not proof that askDraft produced it.
@@ -101,7 +106,20 @@ export async function askDraft(
   if (!answer.trim() || sourceSentences.length === 0) return doesNotSay("unsupportedAnswer");
 
   // The same sentence quoted twice is one Source sentence.
-  const located = locateAll(extractedText, [...new Set(sourceSentences)]);
+  const quoted = [...new Set(sourceSentences)];
+  let located: Located;
+  try {
+    located = await locateWithRequote(extractedText, quoted, async (failed) => {
+      const { data: requoted } = await modelClient.complete(
+        answerRequoteRequest(extractedText, checked.question, answer, quoted, failed),
+      );
+      return [...new Set(parseRequote(requoted))];
+    });
+  } catch {
+    // The answer could not be verified, and the fixed reply is always a
+    // truthful one. The first call's failure, above, still rejects.
+    return doesNotSay("requoteFailed");
+  }
   if (!located.ok) return doesNotSay("citationFailed");
   return brandAnswer({ kind: "answered", text: answer, sourceSentences: located.sentences });
 }

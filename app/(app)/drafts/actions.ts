@@ -306,7 +306,8 @@ async function answerFrom(text: string, question: string): Promise<AskResult> {
 // saved Draft, so a question is reserved against the limit (ADR 0007) here,
 // in one atomic step, right before askDraft. An answered question stays
 // counted, including the fixed "does not say" reply, since the model was
-// asked. A question that fails is handed back. Runs on the server, so the OpenRouter key never
+// asked, and one whose Source sentences took a regeneration call: it is
+// still one question. A question that fails is handed back. Runs on the server, so the OpenRouter key never
 // reaches the browser.
 export async function askAboutDraft(draftId: unknown, question: unknown): Promise<AskResult> {
   if (!supabaseConfig()) redirect("/drafts/new");

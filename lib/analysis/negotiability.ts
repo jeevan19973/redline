@@ -1,5 +1,5 @@
 import type { ModelClient } from "../model/port.ts";
-import { ATTEMPTS, locateAll } from "./citations.ts";
+import { ATTEMPTS, locateWithRequote } from "./citations.ts";
 import { parseBasisRequote, parseCounterOffer } from "./parse.ts";
 import { basisRequoteRequest, counterOfferRequest } from "./prompt.ts";
 import type { FreeTextRedLine } from "./red-lines.ts";
@@ -36,13 +36,12 @@ export async function resolveNegotiability(
   let basisFailure: BasisCitationFailure | undefined;
 
   if (proposed.negotiability === "nonNegotiable") {
-    let located = locateAll(extractedText, [proposed.nonNegotiableBasis]);
-    if (!located.ok) {
-      // A failure of the regeneration call itself rejects the whole analysis,
-      // like every other model failure.
+    // A failure of the regeneration call itself rejects the whole analysis,
+    // like every other model failure.
+    const located = await locateWithRequote(extractedText, [proposed.nonNegotiableBasis], async () => {
       const { data } = await modelClient.complete(basisRequoteRequest(extractedText, proposed, sentences, redLine));
-      located = locateAll(extractedText, [parseBasisRequote(data)]);
-    }
+      return [parseBasisRequote(data)];
+    });
     if (located.ok) {
       return { negotiability: { negotiability: "nonNegotiable", nonNegotiableBasis: located.sentences[0] } };
     }
