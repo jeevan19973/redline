@@ -107,7 +107,9 @@ first.
     you create by hand in Studio or through the admin API (the README says
     so). Accounts that already exist in your local database are untouched. The
     owner script `npm run invite:create -- 5` needs `SUPABASE_SECRET_KEY` in
-    `.env.local`; the app itself never reads that key.
+    `.env.local`. Since the review fixes, the app server reads that key too,
+    to store and read reports (never in the browser), so it is required
+    wherever Supabase is set up.
 
 ## Real-model smoke run
 
@@ -216,7 +218,7 @@ To use it locally with accounts (Docker running):
 
 ```sh
 npm run db:start
-npx supabase db reset            # applies the five migrations in supabase/migrations/ to your LOCAL database
+npx supabase db reset            # applies the migrations in supabase/migrations/ to your LOCAL database
 # add SUPABASE_SECRET_KEY to .env.local (npx supabase status -o env prints it as SECRET_KEY)
 npm run invite:create -- 1       # prints one invite code
 npm run dev                      # http://localhost:3000, then sign up with that code
@@ -224,7 +226,7 @@ npm run dev                      # http://localhost:3000, then sign up with that
 
 `db reset` wipes your local database, including the one test account from
 ticket 01. If you would rather apply the migrations by hand, as you planned,
-run the five files in `supabase/migrations/` in filename order.
+run the files in `supabase/migrations/` in filename order.
 
 To see the model on the fixture lease again (one paid run):
 
@@ -236,3 +238,32 @@ Then read, in this order: decision 9 (the no-account spend risk), decision 12
 (clause labels for your review), the real-model smoke notes on the extra
 personal-guarantee flag, and decision 14 (every new account needs an invite
 code).
+
+## Review fixes
+
+- Fix 2: no client can read or write `reports` any more
+  (`20261002150000_reports_server_only.sql`). The app server stores and reads
+  them with `SUPABASE_SECRET_KEY`, after checking through the Signer's own
+  session that they own the Draft (`app/(app)/drafts/report-store.ts`).
+- Fix 3: the server reserves each analysis or question before the model
+  call, in one atomic update, and hands it back if the call fails
+  (`20261002160000_reserve_uses.sql`), so two requests at once can no longer
+  overrun the limit. Only the secret key can change a count.
+- Fix 5: a failed report read shows an error and a "Try again" that reloads,
+  and never starts an analysis. A per-Draft claim
+  (`20261002170000_analysis_claims.sql`) lets only one run at a time reach
+  the model, so two tabs on a new Draft spend one analysis.
+- Fix 1: an answer whose Source sentences fail verification now gets one
+  regeneration call, through the same `locateWithRequote` loop flags use. If
+  it still fails, or that call fails, the Signer gets the fixed "does not
+  say" reply. It still counts as one question.
+- Fix 4: a flag the model calls Non-negotiable whose basis sentence still
+  fails after the regeneration is now `unconfirmedNonNegotiable`. It shows at
+  its severity with neither the take-it-or-leave-it label nor a Counter-offer,
+  no Counter-offer is asked for, and the failure stays in `citationFailures`.
+- Fix 6: a re-run never lowers or drops a flag the report it replaces showed
+  as Dangerous because of a Red line. `analyzeDraft` takes that report as
+  `{ previousReport }`: the new run's matching flag stays Dangerous, or the
+  earlier flag is carried forward once its Source sentences verify again,
+  marked `keptFromEarlierReport` and shown with a line saying why. A new
+  Draft follows the current Red lines alone.

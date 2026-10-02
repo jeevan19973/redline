@@ -1,6 +1,6 @@
 import type { ModelClient } from "../model/port.ts";
 import { severityFor, type Severity } from "./catalog.ts";
-import { ATTEMPTS, locateAll } from "./citations.ts";
+import { ATTEMPTS, locateWithRequote } from "./citations.ts";
 import { resolveNegotiability } from "./negotiability.ts";
 import { parseRequote } from "./parse.ts";
 import { requoteRequest } from "./prompt.ts";
@@ -121,22 +121,18 @@ async function verifyOne(
   { proposed, redLine }: Matched,
   modelClient: ModelClient,
 ): Promise<Outcome> {
-  let sentences = proposed.sourceSentences;
-  let located = locateAll(extractedText, sentences);
-
+  // A failure of the regeneration call itself rejects the whole analysis,
+  // like any other model failure, rather than silently dropping a flag that
+  // may be Dangerous.
+  const located = await locateWithRequote(extractedText, proposed.sourceSentences, async (failed) => {
+    const { data } = await modelClient.complete(requoteRequest(extractedText, proposed, failed, redLine));
+    return parseRequote(data);
+  });
   if (!located.ok) {
-    // A failure of the regeneration call itself rejects the whole analysis,
-    // like any other model failure, rather than silently dropping a flag
-    // that may be Dangerous.
-    const { data } = await modelClient.complete(requoteRequest(extractedText, proposed, located.failed, redLine));
-    sentences = parseRequote(data);
-    located = locateAll(extractedText, sentences);
-    if (!located.ok) {
-      return {
-        kind: "withheld",
-        citationFailure: { flag: proposed, failedSentences: located.failed, attempts: ATTEMPTS },
-      };
-    }
+    return {
+      kind: "withheld",
+      citationFailure: { flag: proposed, failedSentences: located.failed, attempts: ATTEMPTS },
+    };
   }
 
   // Unreachable: verifyFlags matched every redLine flag to its Red line.
@@ -171,7 +167,7 @@ async function verifyOne(
 
 // Dangerous first, then by the offset of the first Source sentence. The sort
 // is stable, so flags that start at the same place keep the model's order.
-function rank<F extends Judged<RiskFlag>>(flags: F[]): F[] {
+export function rank<F extends Judged<RiskFlag>>(flags: F[]): F[] {
   const tier = (flag: Judged<RiskFlag>) => (flag.severity === "Dangerous" ? 0 : 1);
   return flags.sort(
     (a, b) => tier(a) - tier(b) || a.sourceSentences[0].offset - b.sourceSentences[0].offset,

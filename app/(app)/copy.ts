@@ -116,12 +116,25 @@ export const copy = {
       // A flag one of the Signer's free-text Red lines added.
       redLineType: "Your Red line",
       crosses: (redLine: string) => `Crosses your Red line: ${redLine}`,
+      // A flag a re-run kept Dangerous because the report it replaced showed
+      // it as Dangerous under a Red line (keptFromEarlierReport).
+      kept: ({ redLine, changed, carried }: { redLine: string; changed: boolean; carried: boolean }) =>
+        [
+          changed
+            ? `This stays Dangerous because an earlier report on this Draft showed it as Dangerous under your Red line "${redLine}", which you've since changed or removed.`
+            : `This stays Dangerous because an earlier report on this Draft showed it as Dangerous under your Red line "${redLine}".`,
+          carried ? "This analysis didn't flag it again, so this is the flag from that report." : "",
+          "To check the document against only your current Red lines, add it as a new Draft.",
+        ]
+          .filter(Boolean)
+          .join(" "),
     },
     // The Red lines a stored Report ran against (its snapshot).
     redLines: {
       title: "Red lines this report used",
       none: "You had no Red lines when this report ran.",
-      stale: "Changing your Red lines doesn't change this report. Run the analysis again to use your current list.",
+      stale:
+        "Changing your Red lines doesn't change this report. Run the analysis again to use your current list. Any flag a Red line made Dangerous here stays Dangerous when you do.",
     },
     // A negotiable flag's replacement wording, and the Copy button.
     counterOffer: {
@@ -190,6 +203,13 @@ export const copy = {
     rerunHint: "Replaces this report with a new one from the same text and your current Red lines.",
     rerunFailed: "Underline couldn't finish the new analysis. This report is unchanged.",
     unreadable: "Underline couldn't read the saved report on this Draft. Run the analysis again to replace it.",
+    // Another run on this Draft (another tab, say) is in progress.
+    elsewhere: "Underline is already analyzing this Draft in another tab or window. The report will appear here when it's done.",
+    // The report couldn't be read; no analysis starts.
+    readError: "Underline couldn't load this Draft's report. Nothing has changed. Try again in a moment.",
+    reloading: "Loading",
+    // The server can't store reports (no secret key), so no analysis ran.
+    storageUnavailable: "Underline can't save reports right now, so it didn't run the analysis. It didn't count against your limit.",
   },
   redLines: {
     title: "Red lines",
@@ -216,7 +236,7 @@ export const copy = {
       floor:
         "Removing a Red line never hides a Dangerous flag: a clause that reaches you personally always shows as Dangerous.",
       reports:
-        "Changing your Red lines doesn't change reports you already have. To use your current list on a Draft, open it and run the analysis again.",
+        "Changing your Red lines doesn't change reports you already have. To use your current list on a Draft, open it and run the analysis again. A flag that a Red line made Dangerous stays Dangerous on that Draft. To check a document against only your current list, add it as a new Draft.",
       errors: {
         duplicate: "That clause type is already one of your Red lines.",
         invalid: "Choose a clause type from the list.",

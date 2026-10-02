@@ -1,7 +1,8 @@
 import type { SourceSentence } from "./report.ts";
 
-// Citation verification (ADR 0001), shared by Risk flags and the guaranty
-// gap: every quoted sentence must be an exact substring of the stored text.
+// Citation verification (ADR 0001), shared by Risk flags, the guaranty gap,
+// the Non-negotiable basis and question answers: every quoted sentence must
+// be an exact substring of the stored text.
 
 // How many times a sentence is quoted before what rests on it is withheld:
 // the analysis itself, then one regeneration.
@@ -23,4 +24,19 @@ export function locateAll(extractedText: string, sentences: readonly string[]): 
   }
   if (failed.length > 0) return { ok: false, failed };
   return { ok: true, sentences: found.sort((a, b) => a.offset - b.offset) };
+}
+
+// Verification with one regeneration (ADR 0001), the one loop every caller
+// shares: locates the sentences, and when any fails, calls `requote` once
+// with the ones that failed and locates the sentences it returns instead.
+// `requote` makes the regeneration request; a failure of that call is the
+// caller's to handle.
+export async function locateWithRequote(
+  extractedText: string,
+  sentences: readonly string[],
+  requote: (failed: readonly string[]) => Promise<readonly string[]>,
+): Promise<Located> {
+  const located = locateAll(extractedText, sentences);
+  if (located.ok) return located;
+  return locateAll(extractedText, await requote(located.failed));
 }

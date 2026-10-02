@@ -9,6 +9,7 @@ import {
   displayAnswer,
   displayReport,
   QUESTION_MAX_LENGTH,
+  readPreviousReport,
   type Answer,
   type Report,
   type ShownAnswer,
@@ -18,10 +19,11 @@ import { fitsInOneSave } from "@/lib/draft-limits";
 import { showConfidence, supabaseConfig } from "@/lib/env";
 import { openRouterClient } from "@/lib/model/openrouter.ts";
 import { createClient } from "@/lib/supabase/server";
-import { readAllowance, recordUse } from "../allowance";
+import { readAllowance, releaseUse, reserveUse } from "../allowance";
 import { copy } from "../copy";
 import { listRedLines } from "../red-lines/store";
 import { isDraftId } from "./draft-id";
+import { claimAnalysis, clearAnalysisClaim, readReport, reportStorageReady, saveReport } from "./report-store";
 
 export type CreateDraftState = { error?: string };
 
@@ -104,9 +106,16 @@ export async function deleteDraft(draftId: unknown, then: unknown): Promise<Dele
   return { ok: true };
 }
 
-// `refusal` is the plain message when the analysis limit is reached, so the
-// page shows it instead of offering to try again.
-export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string };
+// `refusal` is a plain message for a run that was refused (the analysis
+// limit, or reports that can't be stored), so the page shows it instead of
+// offering to try again. `analyzing` means another run on this Draft is in
+// progress, from another tab say, so this one made no model call and the
+// page waits for that run instead.
+export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string; analyzing?: true };
+
+// "first" is the automatic analysis of a Draft with no report yet; "rerun"
+// is the Signer's explicit "Run analysis again".
+export type RunMode = "first" | "rerun";
 
 // Analyzes a stored Draft and stores its Report, replacing any earlier one.
 // Called from the Draft's page, both for the first analysis and for a re-run;
@@ -118,22 +127,35 @@ export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string };
 // A failure leaves any earlier Report in place. The page shows its own
 // message, so the result only says whether it worked, or why it was refused.
 //
+// Only one run at a time per Draft reaches the model: the run claims the
+// Draft first and clears the claim when it ends, success or failure. A
+// "first" run only analyzes a Draft that still has no report. If one exists
+// by the time it holds the claim (another tab finished first), the page is
+// re-rendered with that report and no model call is made. If the report
+// can't be read, neither kind of run analyzes. A re-run passes the report it
+// replaces to the Analysis module, which keeps any flag that report showed
+// as Dangerous because of a Red line.
+//
 // Every analysis, first or re-run, counts against the Signer's one-time
-// limit (ADR 0007). It is checked here before any model call, and the use
-// is recorded once the model has returned, so a failed call costs nothing.
-export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> {
+// limit (ADR 0007). The use is reserved here, in one atomic step, after the
+// claim and right before the model call, and handed back if the call fails
+// before the model returns, so a failed call costs nothing and two requests
+// at once cannot overrun the limit.
+//
+// The Report is stored with the secret key (report-store.ts). When that key
+// is missing, nothing runs: no model call is made for a Report that could
+// not be stored.
+export async function runAnalysis(draftId: unknown, mode: unknown): Promise<RunAnalysisResult> {
   if (!supabaseConfig()) redirect("/drafts/new");
-  if (!isDraftId(draftId)) return { ok: false };
+  if (!isDraftId(draftId) || (mode !== "first" && mode !== "rerun")) return { ok: false };
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/sign-in");
+  // The verified session's subject, never anything the request sent.
+  const owner = auth.claims.sub;
 
-  const allowance = await readAllowance(supabase);
-  if (!allowance) return { ok: false };
-  if (allowance.analysesLeft === 0) {
-    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
-  }
+  if (!reportStorageReady()) return { ok: false, refusal: copy.analysis.storageUnavailable };
 
   // Row-level security returns nothing for another Signer's Draft.
   const { data: draft, error: loadError } = await supabase
@@ -146,34 +168,71 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
     return { ok: false };
   }
 
+  const claim = await claimAnalysis(supabase, draft.id);
+  if (claim.kind === "held") return { ok: false, analyzing: true };
+  if (claim.kind === "error") return { ok: false };
+  try {
+    return await analyzeClaimed(supabase, owner, draft, mode);
+  } finally {
+    await clearAnalysisClaim(draft.id, claim);
+  }
+}
+
+// The part of runAnalysis that runs while it holds the Draft's claim.
+async function analyzeClaimed(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  owner: string,
+  draft: { id: string; extracted_text: string },
+  mode: RunMode,
+): Promise<RunAnalysisResult> {
+  // A report that can't be read stops either kind of run: a first run must
+  // not analyze a Draft that may have one, and a re-run must not replace one
+  // whose Dangerous flags it was never shown.
+  const existing = await readReport(supabase, draft.id);
+  if (existing.kind === "error") return { ok: false };
+  if (mode === "first" && existing.kind === "found") {
+    // Another run stored it first: show that one.
+    refresh();
+    return { ok: true };
+  }
+  // A re-run never lowers or drops a flag the report it replaces showed as
+  // Dangerous because of a Red line, so that report goes to the Analysis
+  // module. One whose stored JSON is not a well-formed report (the
+  // "unreadable" case, which the re-run replaces) has no flags to keep.
+  const previousReport =
+    existing.kind === "found" ? (readPreviousReport(existing.report) ?? undefined) : undefined;
+
+  const allowance = await readAllowance(supabase);
+  if (!allowance) return { ok: false };
+  if (allowance.analysesLeft === 0) {
+    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
+  }
+
   // An analysis never runs as if the Signer had no Red lines when the list
   // could not be read.
   const redLines = await listRedLines(supabase);
   if (!redLines) return { ok: false };
 
+  // The early check above gives the limit for the message; this is the guard.
+  const reserved = await reserveUse(owner, "analysis");
+  if (reserved === "limit") {
+    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
+  }
+  if (reserved === "error") return { ok: false };
+
   let report: Report;
   try {
-    report = await analyzeDraft(draft.extracted_text, redLines, openRouterClient());
+    report = await analyzeDraft(draft.extracted_text, redLines, openRouterClient(), { previousReport });
   } catch (error) {
     console.error("Analysis failed", error instanceof Error ? error.message : error);
+    await releaseUse(owner, "analysis");
     return { ok: false };
   }
-  // The model has returned, so this analysis counts, even if saving the
-  // Report fails below.
-  await recordUse(supabase, "analysis");
+  // The model has returned, so this analysis stays counted, even if saving
+  // the Report fails below.
 
   // One current Report per Draft: a re-run replaces the row.
-  const { error: saveError } = await supabase.from("reports").upsert(
-    {
-      draft_id: draft.id,
-      report,
-      model_id: report.modelId,
-      created_at: report.createdAt,
-    },
-    { onConflict: "draft_id" },
-  );
-  if (saveError) {
-    console.error("Could not save a Report", saveError.code, saveError.message);
+  if (!(await saveReport(supabase, draft.id, report))) {
     // The analysis still counted, so the rail's count changes.
     refresh();
     return { ok: false };
@@ -206,7 +265,7 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
         console.error("Withheld a Risk flag whose Source sentences failed verification", failure.flag.clauseType);
       } else if ("nonNegotiableBasis" in failure) {
         console.error(
-          "Showed a Risk flag as negotiable because its Non-negotiable basis failed verification",
+          "Showed a Risk flag with no take-it-or-leave-it label or Counter-offer because its Non-negotiable basis failed verification",
           failure.nonNegotiableBasis.flag.clauseType,
         );
       } else {
@@ -254,10 +313,11 @@ async function answerFrom(text: string, question: string): Promise<AskResult> {
 // loaded here by the Draft's id: the browser sends only the id and the
 // question, never the text. Nothing about the question or the answer is
 // stored. This is the one place a Signer's question reaches the model for a
-// saved Draft, so the question limit (ADR 0007) is checked here, before
-// askDraft, and an answered question is recorded against it, including the
-// fixed "does not say" reply, since the model was asked. A question that
-// fails is not counted. Runs on the server, so the OpenRouter key never
+// saved Draft, so a question is reserved against the limit (ADR 0007) here,
+// in one atomic step, right before askDraft. An answered question stays
+// counted, including the fixed "does not say" reply, since the model was
+// asked, and one whose Source sentences took a regeneration call: it is
+// still one question. A question that fails is handed back. Runs on the server, so the OpenRouter key never
 // reaches the browser.
 export async function askAboutDraft(draftId: unknown, question: unknown): Promise<AskResult> {
   if (!supabaseConfig()) redirect("/drafts/new");
@@ -268,6 +328,8 @@ export async function askAboutDraft(draftId: unknown, question: unknown): Promis
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/sign-in");
+  // The verified session's subject, never anything the request sent.
+  const owner = auth.claims.sub;
 
   const allowance = await readAllowance(supabase);
   if (!allowance) return { error: copy.question.errors.failed };
@@ -284,12 +346,19 @@ export async function askAboutDraft(draftId: unknown, question: unknown): Promis
     return { error: copy.question.errors.failed };
   }
 
+  // The early check above gives the limit for the message; this is the guard.
+  const reserved = await reserveUse(owner, "question");
+  if (reserved === "limit") return { error: copy.limit.questionReached(allowance.questionLimit) };
+  if (reserved === "error") return { error: copy.question.errors.failed };
+
   const result = await answerFrom(draft.extracted_text, question as string);
   if ("answer" in result) {
-    await recordUse(supabase, "question");
     // Re-render the rail's count. The answer lives in the page's own state,
     // which a refresh keeps.
     refresh();
+  } else {
+    // askDraft failed before the model returned an answer.
+    await releaseUse(owner, "question");
   }
   return result;
 }

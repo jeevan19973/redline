@@ -52,7 +52,7 @@ try {
       "flag" in failure
         ? failure.flag.clauseType
         : "nonNegotiableBasis" in failure
-          ? `Non-negotiable basis on a ${failure.nonNegotiableBasis.flag.clauseType} flag (shown as negotiable)`
+          ? `Non-negotiable basis on a ${failure.nonNegotiableBasis.flag.clauseType} flag (shown with no label and no Counter-offer)`
           : "guaranty gap";
     console.log(`\n- ${what}, after ${failure.attempts} attempts`);
     for (const sentence of failure.failedSentences) console.log(`   Not in the text: ${JSON.stringify(sentence)}`);

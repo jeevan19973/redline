@@ -70,9 +70,10 @@ npm run invite:create -- 5
 
 It prints the new codes, one per line. It needs `NEXT_PUBLIC_SUPABASE_URL`
 and `SUPABASE_SECRET_KEY` in `.env.local` (`npx supabase status -o env` prints
-the key as `SECRET_KEY`). The secret key bypasses row-level security, so only
-owner scripts read it; the app never does, and it never gets a `NEXT_PUBLIC_`
-prefix.
+the key as `SECRET_KEY`). The secret key bypasses row-level security. Besides
+owner scripts, the app server reads it to store and read reports, which no
+client may touch; without it, a signed-in Signer can't run an analysis. It
+never reaches the browser and never gets a `NEXT_PUBLIC_` prefix.
 
 To see which codes are spent, run this in Studio's SQL editor:
 
