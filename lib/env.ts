@@ -28,6 +28,13 @@ export function requireSupabaseConfig(): SupabaseConfig {
   return config;
 }
 
+// The Supabase secret key, or null when it is not set. It bypasses row-level
+// security, so only lib/supabase/admin.ts reads it, on the server. It never
+// gets a NEXT_PUBLIC_ prefix, so it is never inlined into the browser bundle.
+export function supabaseSecretKey(): string | null {
+  return process.env.SUPABASE_SECRET_KEY || null;
+}
+
 // Whether Signers see each Risk flag's Confidence (ADR 0004). Off unless
 // UNDERLINE_SHOW_CONFIDENCE is exactly "true": the labels stay hidden until
 // the calibration eval passes. Server-only and read at request time, so it

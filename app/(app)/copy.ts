@@ -190,6 +190,8 @@ export const copy = {
     rerunHint: "Replaces this report with a new one from the same text and your current Red lines.",
     rerunFailed: "Underline couldn't finish the new analysis. This report is unchanged.",
     unreadable: "Underline couldn't read the saved report on this Draft. Run the analysis again to replace it.",
+    // The server can't store reports (no secret key), so no analysis ran.
+    storageUnavailable: "Underline can't save reports right now, so it didn't run the analysis. It didn't count against your limit.",
   },
   redLines: {
     title: "Red lines",

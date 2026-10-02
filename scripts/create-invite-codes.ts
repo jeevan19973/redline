@@ -5,8 +5,8 @@
 // Runs under plain Node 24 (type stripping, no extra packages) and reads
 // NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY from .env.local when
 // present. The secret key bypasses row-level security, which is the only way
-// to write invite_codes. It is for owner scripts like this one: the app never
-// reads it, and it never gets a NEXT_PUBLIC_ prefix.
+// to write invite_codes. Only owner scripts like this one and the app server
+// read it, and it never gets a NEXT_PUBLIC_ prefix.
 
 import { generateInviteCode } from "../lib/invite-code.ts";
 

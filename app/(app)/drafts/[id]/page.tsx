@@ -12,6 +12,7 @@ import { DeleteDraft } from "../delete-draft";
 import { draftDate } from "../draft-date";
 import { isDraftId } from "../draft-id";
 import { DraftReading } from "../draft-reading";
+import { readReport } from "../report-store";
 import { AnalysisRunner } from "./analysis-runner";
 
 type Draft = { id: string; title: string; extracted_text: string; created_at: string };
@@ -35,17 +36,11 @@ const getDraft = cache(async (id: string): Promise<Draft | null> => {
   return data ?? null;
 });
 
-// The Draft's current Report. Row-level security limits it to the Draft's owner.
+// The Draft's current Report, read only for the Draft's owner (report-store.ts).
 async function getReport(draftId: string): Promise<StoredState> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("reports")
-    .select("report")
-    .eq("draft_id", draftId)
-    .maybeSingle<{ report: unknown }>();
-  if (error) console.error("Could not load a Report", error.code, error.message);
-  if (!data) return { kind: "none" };
-  const report = readStoredReport(data.report, { showConfidence: showConfidence() });
+  const read = await readReport(await createClient(), draftId);
+  if (read.kind !== "found") return { kind: "none" };
+  const report = readStoredReport(read.report, { showConfidence: showConfidence() });
   return report ? { kind: "report", report } : { kind: "unreadable" };
 }
 

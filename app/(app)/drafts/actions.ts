@@ -22,6 +22,7 @@ import { readAllowance, recordUse } from "../allowance";
 import { copy } from "../copy";
 import { listRedLines } from "../red-lines/store";
 import { isDraftId } from "./draft-id";
+import { reportStorageReady, saveReport } from "./report-store";
 
 export type CreateDraftState = { error?: string };
 
@@ -121,6 +122,10 @@ export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string };
 // Every analysis, first or re-run, counts against the Signer's one-time
 // limit (ADR 0007). It is checked here before any model call, and the use
 // is recorded once the model has returned, so a failed call costs nothing.
+//
+// The Report is stored with the secret key (report-store.ts). When that key
+// is missing, nothing runs: no model call is made for a Report that could
+// not be stored.
 export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> {
   if (!supabaseConfig()) redirect("/drafts/new");
   if (!isDraftId(draftId)) return { ok: false };
@@ -128,6 +133,8 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/sign-in");
+
+  if (!reportStorageReady()) return { ok: false, refusal: copy.analysis.storageUnavailable };
 
   const allowance = await readAllowance(supabase);
   if (!allowance) return { ok: false };
@@ -163,17 +170,7 @@ export async function runAnalysis(draftId: unknown): Promise<RunAnalysisResult> 
   await recordUse(supabase, "analysis");
 
   // One current Report per Draft: a re-run replaces the row.
-  const { error: saveError } = await supabase.from("reports").upsert(
-    {
-      draft_id: draft.id,
-      report,
-      model_id: report.modelId,
-      created_at: report.createdAt,
-    },
-    { onConflict: "draft_id" },
-  );
-  if (saveError) {
-    console.error("Could not save a Report", saveError.code, saveError.message);
+  if (!(await saveReport(supabase, draft.id, report))) {
     // The analysis still counted, so the rail's count changes.
     refresh();
     return { ok: false };
