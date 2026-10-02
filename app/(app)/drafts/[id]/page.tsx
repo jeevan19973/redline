@@ -8,7 +8,7 @@ import { AccountsUnavailable } from "../../../_accounts-unavailable/notice";
 import { copy } from "../../copy";
 import { draftDate } from "../draft-date";
 import { isDraftId } from "../draft-id";
-import { ReportView } from "../report-view";
+import { DraftReading } from "../draft-reading";
 import { AnalysisRunner } from "./analysis-runner";
 
 type Draft = { id: string; title: string; extracted_text: string; created_at: string };
@@ -61,7 +61,7 @@ export default async function DraftPage({ params }: Props) {
   const stored = await getReport(draft.id);
 
   return (
-    <article className="pane" aria-labelledby="draft-title">
+    <article className="pane pane--reading" aria-labelledby="draft-title">
       <header className="pane__head">
         <h1 className="pane__title draft__title" id="draft-title">
           {draft.title}
@@ -71,29 +71,14 @@ export default async function DraftPage({ params }: Props) {
         </p>
       </header>
 
-      {stored.kind === "report" ? (
-        <ReportView
-          report={stored.report}
-          actions={<AnalysisRunner draftId={draft.id} mode="rerun" />}
-        />
-      ) : (
-        <section className="report" aria-labelledby="report-title">
-          <header className="report__head">
-            <h2 className="draft__section-title" id="report-title">
-              {copy.report.title}
-            </h2>
-          </header>
-          <AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />
-        </section>
-      )}
-
-      <section className="draft__text" aria-labelledby="draft-text-title">
-        <h2 className="draft__section-title" id="draft-text-title">
-          {copy.draft.textTitle}
-        </h2>
-        <p className="draft__section-intro">{copy.draft.textIntro}</p>
-        <div className="document">{draft.extracted_text}</div>
-      </section>
+      <DraftReading
+        documentText={draft.extracted_text}
+        textTitle={copy.draft.textTitle}
+        textIntro={copy.draft.textIntro}
+        report={stored.kind === "report" ? stored.report : null}
+        actions={<AnalysisRunner draftId={draft.id} mode="rerun" />}
+        pending={<AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />}
+      />
     </article>
   );
 }

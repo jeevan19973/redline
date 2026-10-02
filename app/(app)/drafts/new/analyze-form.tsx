@@ -6,7 +6,7 @@ import { fitsInOneSave } from "@/lib/draft-limits";
 import { copy } from "../../copy";
 import { analyzeWithoutAccount } from "../actions";
 import { isPlainText } from "../plain-text";
-import { ReportView } from "../report-view";
+import { DraftReading } from "../draft-reading";
 
 const text = copy.analyze;
 
@@ -25,18 +25,19 @@ export function AnalyzeForm() {
   const [body, setBody] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [report, setReport] = useState<StoredReport | null>(null);
+  // The report and the exact text it was made from.
+  const [result, setResult] = useState<{ report: StoredReport; text: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const reportRegion = useRef<HTMLDivElement>(null);
 
   // Move focus to a new report so a screen reader announces it.
   useEffect(() => {
-    if (report) reportRegion.current?.focus();
-  }, [report]);
+    if (result) reportRegion.current?.focus();
+  }, [result]);
 
   function changeText(next: string) {
     setBody(next);
-    setReport(null);
+    setResult(null);
   }
 
   async function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
@@ -72,13 +73,13 @@ export function AnalyzeForm() {
     const refused = refusalFor(body);
     setMessage(refused);
     if (refused) return;
-    setReport(null);
+    setResult(null);
     const sent = body;
     startTransition(async () => {
       try {
-        const result = await analyzeWithoutAccount(sent);
-        if ("report" in result) setReport(result.report);
-        else setMessage(result.error);
+        const outcome = await analyzeWithoutAccount(sent);
+        if ("report" in outcome) setResult({ report: outcome.report, text: sent });
+        else setMessage(outcome.error);
       } catch {
         setMessage(text.errors.failed);
       }
@@ -146,9 +147,14 @@ export function AnalyzeForm() {
         </div>
       </form>
 
-      {report && (
+      {result && (
         <div className="analyze__result" ref={reportRegion} tabIndex={-1}>
-          <ReportView report={report} />
+          <DraftReading
+            documentText={result.text}
+            textTitle={text.textTitle}
+            textIntro={text.textIntro}
+            report={result.report}
+          />
           <p className="analyze__note">{text.notSaved}</p>
         </div>
       )}

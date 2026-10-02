@@ -1,22 +1,4 @@
-// The clause types of the fixed catalog (spec, "Fixed clause catalog"), by id.
-// These ids name catalog entries everywhere: in a Signer's Red lines, on a
-// Risk flag and in a Clean verdict's checked list. Ticket 04 adds the catalog
-// itself (names and default severities) as data beside them.
-export const CLAUSE_TYPES = [
-  "personalGuarantee",
-  "preExistingIpAssignment",
-  "uncappedIndemnity",
-  "individualNonCompete",
-  "autoRenewal",
-  "paymentTerms",
-  "lateFees",
-  "arbitrationClassWaiver",
-  "liabilityCap",
-  "unilateralAmendment",
-  "depositAndRepairs",
-] as const;
-
-export type ClauseType = (typeof CLAUSE_TYPES)[number];
+import { isClauseType, type ClauseType } from "./catalog.ts";
 
 // A Red line the Signer has set: either a catalog clause type they will not
 // accept, or a term in their own words. `id` is the Red line's own id, so a
@@ -37,7 +19,7 @@ export function isRedLine(value: unknown): value is RedLine {
   const candidate = value as Record<string, unknown>;
   if (typeof candidate.id !== "string") return false;
   if (candidate.kind === "catalog") {
-    return (CLAUSE_TYPES as readonly unknown[]).includes(candidate.clauseType);
+    return isClauseType(candidate.clauseType);
   }
   if (candidate.kind === "freeText") return typeof candidate.text === "string";
   return false;

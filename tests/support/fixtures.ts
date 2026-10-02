@@ -32,14 +32,62 @@ export function loadFixture(name: FixtureName): Fixture {
   return { name, text: read("txt"), sidecar: JSON.parse(read("json")) as Sidecar };
 }
 
-// What the model would return for a fixture, built from its sidecar, with
-// any field replaced by `overrides`. Ticket 04 adds the planted clauses as
-// flags here, with options to perturb a sentence.
+// A Risk flag as the model returns it in its structured output.
+export type ModelFlag = {
+  clauseType: string;
+  sourceSentences: string[];
+  readings: string[];
+  reachesSignerPersonally: boolean;
+};
+
+// The flag the model would return for one planted clause: its sentence
+// verbatim, one Reading, and the personal-reach fact the sidecar's expected
+// severity implies (a planted clause is Dangerous only because it reaches
+// the Signer personally). `overrides` replaces any field.
+export function modelFlag(clause: PlantedClause, overrides: Partial<ModelFlag> = {}): ModelFlag {
+  return {
+    clauseType: clause.clauseType,
+    sourceSentences: [clause.sentence],
+    readings: [clause.why],
+    reachesSignerPersonally: clause.expectedSeverity === "Dangerous",
+    ...overrides,
+  };
+}
+
+// One planted clause by its sidecar id.
+export function plantedClause(fixture: Fixture, id: string): PlantedClause {
+  const clause = fixture.sidecar.clauses.find((candidate) => candidate.id === id);
+  if (!clause) throw new Error(`${fixture.name} has no planted clause "${id}".`);
+  return clause;
+}
+
+// What the model would return for a fixture, built from its sidecar: the
+// description as the summary and every planted clause as a flag, verbatim,
+// in sidecar order. `overrides` replaces either field.
 export function analysisPayload(
   fixture: Fixture,
-  overrides: { summary?: string } = {},
+  overrides: { summary?: string; riskFlags?: ModelFlag[] } = {},
 ): Record<string, unknown> {
   return {
     summary: overrides.summary ?? fixture.sidecar.description,
+    riskFlags: overrides.riskFlags ?? fixture.sidecar.clauses.map((clause) => modelFlag(clause)),
   };
+}
+
+// What the model would return for a regeneration request.
+export function requotePayload(sourceSentences: string[]): Record<string, unknown> {
+  return { sourceSentences };
+}
+
+// Ways a quoted sentence can differ from the text by one character, each of
+// which citation verification must reject.
+export const PERTURBATIONS: ReadonlyArray<readonly [string, (sentence: string) => string]> = [
+  ["an extra space", (sentence) => sentence.replace(" ", "  ")],
+  ["a curly quote in place of a straight one", (sentence) => replaceOnce(sentence, "'", "\u2019")],
+  ["a change of case", (sentence) => sentence.charAt(0).toLowerCase() + sentence.slice(1)],
+];
+
+function replaceOnce(sentence: string, from: string, to: string): string {
+  if (!sentence.includes(from)) throw new Error(`The sentence has no ${JSON.stringify(from)} to replace.`);
+  return sentence.replace(from, to);
 }

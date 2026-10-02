@@ -2,10 +2,11 @@
 // the real Analysis module and the real OpenRouter adapter, with no Red
 // lines. It runs under plain Node 24 (type stripping, no extra packages) and
 // reads OPENROUTER_API_KEY and OPENROUTER_MODEL from .env.local when present.
-// It makes one paid model call.
+// It makes one paid model call, plus one more for each flag whose Source
+// sentences fail verification.
 
 import { readFileSync } from "node:fs";
-import { analyzeDraft } from "../lib/analysis/index.ts";
+import { analyzeDraft, clauseTypeLabel } from "../lib/analysis/index.ts";
 import { openRouterClient } from "../lib/model/openrouter.ts";
 
 if (!process.env.OPENROUTER_API_KEY) {
@@ -19,7 +20,25 @@ try {
   const report = await analyzeDraft(text, [], openRouterClient());
   console.log(`Model: ${report.modelId}\n`);
   console.log(`Summary:\n${report.summary}\n`);
-  console.log(`Scope stamp:\n${report.scopeStamp}`);
+  console.log(`Risk flags (${report.riskFlags.length}):`);
+  report.riskFlags.forEach((flag, index) => {
+    console.log(`\n${index + 1}. ${flag.severity}: ${clauseTypeLabel(flag.clauseType)} (${flag.clauseType})`);
+    for (const reading of flag.readings) console.log(`   Reading: ${reading}`);
+    for (const sentence of flag.sourceSentences) {
+      console.log(`   Source sentence at offset ${sentence.offset}: ${JSON.stringify(sentence.text)}`);
+    }
+  });
+
+  const failures = report.citationFailures;
+  console.log(`\nFlags proposed: ${report.riskFlags.length + failures.length}`);
+  console.log(`Flags that passed citation verification: ${report.riskFlags.length}`);
+  console.log(`Citation failures (withheld, never shown to the Signer): ${failures.length}`);
+  for (const failure of failures) {
+    console.log(`\n- ${failure.flag.clauseType}, after ${failure.attempts} attempts`);
+    for (const sentence of failure.failedSentences) console.log(`   Not in the text: ${JSON.stringify(sentence)}`);
+  }
+
+  console.log(`\nScope stamp:\n${report.scopeStamp}`);
 } catch (error) {
   console.error(`The smoke run failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);

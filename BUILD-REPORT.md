@@ -14,6 +14,7 @@ stops early. The final section lists what to run first.
 | 01 Sign in to an empty library | done | Built before this run (`b02c404`). Follow-up: the app now starts with no Supabase variables, and the anon key name is read first |
 | 02 Upload a plain-text file or paste text as a Draft | done | RLS checked in a rolled-back transaction; save flow not run in a browser (migration not applied). Body limit 2 MB; dates in UTC |
 | 03 First report: summary and scope stamp | done | 26 tests. reports RLS checked in a rolled-back transaction; Draft-page flow not run in a browser |
+| 04 Risk flags with verified Source sentences | done | 60 tests. Screen checked in headless Chrome via a temporary route. Clause labels want your read |
 
 ## Decisions made in your absence
 
@@ -62,3 +63,13 @@ stops early. The final section lists what to run first.
     stored report that fails validation shows a "run again" button instead of
     re-running by itself, since each run is a paid call.
 11. **vitest 5.0.3**, exact-pinned, is the only package added in ticket 03.
+12. **Risk flags (ticket 04).** Severity is decided in code: Dangerous for a
+    Dangerous catalog type, or for any flag the model says reaches the Signer
+    personally; Caution otherwise. A severity the model writes itself is
+    ignored. If the regeneration call itself errors, the whole analysis fails
+    instead of dropping a flag that might be Dangerous. Readings are stored as
+    an array of one or two (the spec says `reading`). The eleven Signer-facing
+    clause labels in `lib/analysis/catalog.ts` (for example "Cap on what they
+    owe you") are agent wording that went through the humanizer; they deserve
+    your read. Hedging in Readings is asked for in the prompt but not checked
+    in code.

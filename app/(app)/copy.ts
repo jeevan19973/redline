@@ -54,6 +54,22 @@ export const copy = {
     analyzed: "Analyzed",
     summaryTitle: "Summary",
     scopeTitle: "What this report covers",
+    flags: {
+      title: "Risk flags",
+      legend: "Dangerous means the clause reaches past the business to you personally. Caution means the cost stays with the business.",
+      none: "Underline didn't flag any clause in this text.",
+      olderReport: "This report was made before Underline added Risk flags. Run the analysis again to get them.",
+      showInText: "Show in text",
+      twoReadings: "This can be read two ways:",
+    },
+    severity: { Dangerous: "Dangerous", Caution: "Caution" },
+  },
+  // The Draft text and its report, side by side or one at a time.
+  reading: {
+    toggleLabel: "Show",
+    report: "Report",
+    text: "Draft text",
+    textNote: "Underlined sentences are the ones a Risk flag quotes. Select one to go to its flag.",
   },
   analysis: {
     pending: "Analyzing this Draft. This can take a minute or two.",
@@ -84,6 +100,8 @@ export const copy = {
     pending: "Analyzing",
     pendingNote: "Analyzing this document. This can take a minute or two.",
     notSaved: "Nothing here is saved, so the report is gone once you leave this page.",
+    textTitle: "The text Underline analyzed",
+    textIntro: "Underline analyzed this exact text. Check it's the document you meant.",
     errors: {
       notText: "Underline reads .txt files here. For another kind of file, copy its text and paste it below.",
       readFailed: "Underline couldn't read that file. Try again, or paste its text below.",

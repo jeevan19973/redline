@@ -41,7 +41,7 @@ function AnalyzeWithoutAccount() {
         </div>
       </header>
       <main id="main" className="solo">
-        <section className="pane" aria-labelledby="analyze-title">
+        <section className="pane pane--reading" aria-labelledby="analyze-title">
           <header className="pane__head">
             <h1 className="pane__title" id="analyze-title">
               {copy.analyze.title}

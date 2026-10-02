@@ -2,7 +2,7 @@
 
 import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { analyzeDraft, type Report, type StoredReport } from "@/lib/analysis/index.ts";
+import { analyzeDraft, displayReport, type Report, type StoredReport } from "@/lib/analysis/index.ts";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { supabaseConfig } from "@/lib/env";
 import { openRouterClient } from "@/lib/model/openrouter.ts";
@@ -123,7 +123,11 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
 
   try {
     const report = await analyzeDraft(text, [], openRouterClient());
-    return { report: { ...report } };
+    // Citation failures stay on the server: they are never shown to the Signer.
+    for (const failure of report.citationFailures) {
+      console.error("Withheld a Risk flag whose Source sentences failed verification", failure.flag.clauseType);
+    }
+    return { report: displayReport(report) };
   } catch (error) {
     console.error("Analysis failed", error instanceof Error ? error.message : error);
     return { error: errors.failed };
