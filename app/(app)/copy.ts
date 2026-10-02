@@ -1,5 +1,24 @@
 // Every string a Signer reads in the signed-in app shell, the library and
 // the Draft screens.
+
+// Why a chosen file gave no text (Text extraction's refusals), shared by the
+// Add a Draft and Analyze forms.
+const fileRefusals = {
+  unsupportedType:
+    "Underline can't read this kind of file. It reads text-based PDFs, Word files (.docx) and plain text (.txt). Export the document as one of those, or paste its text below.",
+  noTextLayer:
+    "This PDF has no text Underline can read, which usually means it's a scan. Underline can't read scanned pages. Export a text-based PDF from the original, or paste the text below.",
+  unreadable:
+    "Underline couldn't read that file. It may be damaged or password-protected. Try again, or paste its text below.",
+} as const;
+
+const fileField = {
+  label: "Document file",
+  hint: "A text-based PDF, a Word file (.docx) or a .txt file. It stays on your computer.",
+  reading: "Reading the file.",
+  remove: "Remove file",
+} as const;
+
 export const copy = {
   rail: {
     label: "Main",
@@ -18,12 +37,8 @@ export const copy = {
   },
   addDraft: {
     title: "Add a Draft",
-    intro: "Choose a plain-text file or paste the document's text. Underline reads the file in your browser and saves only its text.",
-    file: {
-      label: "Plain-text file",
-      hint: "A .txt file. It stays on your computer.",
-      remove: "Remove file",
-    },
+    intro: "Choose a file or paste the document's text. Underline reads the file in your browser and saves only its text.",
+    file: fileField,
     text: {
       label: "Document text",
       pasteHint: "Or paste the text here. Underline saves it exactly as pasted.",
@@ -37,8 +52,7 @@ export const copy = {
     save: "Save Draft",
     pending: "Saving",
     errors: {
-      notText: "Underline reads .txt files here. For another kind of file, copy its text and paste it below.",
-      readFailed: "Underline couldn't read that file. Try again, or paste its text below.",
+      ...fileRefusals,
       missingTitle: "Give the Draft a title.",
       emptyText: "There's no text to save. Choose a file or paste the document's text.",
       tooLarge: "This document is over the 2 MB limit for one Draft.",
@@ -232,12 +246,8 @@ export const copy = {
   // The page at /drafts/new when this copy of Underline has no accounts.
   analyze: {
     title: "Analyze a document",
-    intro: "Paste the document's text or choose a .txt file. This copy of Underline has no accounts, so nothing you add here is saved.",
-    file: {
-      label: "Plain-text file",
-      hint: "A .txt file. It stays on your computer.",
-      remove: "Remove file",
-    },
+    intro: "Paste the document's text or choose a file. This copy of Underline has no accounts, so nothing you add here is saved.",
+    file: fileField,
     text: {
       label: "Document text",
       pasteHint: "Or paste the text here. Underline analyzes it exactly as pasted.",
@@ -251,8 +261,7 @@ export const copy = {
     textTitle: "The text Underline analyzed",
     textIntro: "Underline analyzed this exact text. Check it's the document you meant.",
     errors: {
-      notText: "Underline reads .txt files here. For another kind of file, copy its text and paste it below.",
-      readFailed: "Underline couldn't read that file. Try again, or paste its text below.",
+      ...fileRefusals,
       emptyText: "There's no text to analyze. Choose a file or paste the document's text.",
       tooLarge: "This document is over the 2 MB limit.",
       failed: "Underline couldn't finish the analysis. Try again.",

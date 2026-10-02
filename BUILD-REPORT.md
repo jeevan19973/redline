@@ -22,6 +22,7 @@ stops early. The final section lists what to run first.
 | 05 Confidence label behind a switch | done | 163 tests. Switch is UNDERLINE_SHOW_CONFIDENCE=true, off by default |
 | 10 Question box answered only from the document | done | 189 tests. One model call per question, no regeneration; 500-character limit |
 | 11 Delete a Draft | done | Delete and cascade checked in a rolled-back transaction; dialog checked in headless Chrome |
+| 12 PDF and DOCX upload, with scanned-file refusal | done | Real pdfjs/mammoth exercised in headless Chrome; signed-in form not run |
 
 ## Decisions made in your absence
 

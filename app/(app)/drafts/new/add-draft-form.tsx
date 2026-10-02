@@ -5,7 +5,8 @@ import { unstable_rethrow } from "next/navigation";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { copy } from "../../copy";
 import { createDraft, type CreateDraftState } from "../actions";
-import { isPlainText } from "../plain-text";
+import { ACCEPTED_FILES } from "../accepted-files";
+import { readFile } from "../read-file";
 
 const text = copy.addDraft;
 
@@ -37,34 +38,41 @@ export function AddDraftForm() {
   const [title, setTitle] = useState("");
   const [titleEdited, setTitleEdited] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  // Counts file choices, so a slow read that a later choice or Remove file
+  // has overtaken is dropped.
+  const choice = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const message = refusal ?? state.error;
 
   async function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const input = event.target;
+    const file = input.files?.[0];
     if (!file) return;
-    if (!isPlainText(file)) {
-      setRefusal(text.errors.notText);
-      event.target.value = "";
+    // The file is read here, in the browser, and only the extracted text is
+    // sent. The textarea shows it read-only, and `body` keeps it exactly as
+    // extracted, line endings included: it is what citations are checked
+    // against (ADR 0001). A refused file leaves no Draft behind.
+    const turn = ++choice.current;
+    setReading(true);
+    setRefusal(null);
+    const extraction = await readFile(file);
+    if (turn !== choice.current) return;
+    setReading(false);
+    if (!extraction.ok) {
+      setRefusal(text.errors[extraction.reason]);
+      input.value = "";
       return;
     }
-    try {
-      // The file is read here, in the browser, and only this text is sent.
-      // The textarea shows it read-only, and `body` keeps it exactly as
-      // read, line endings included.
-      const read = await file.text();
-      setBody(read);
-      setFileName(file.name);
-      if (!titleEdited || !title.trim()) setTitle(file.name);
-      setRefusal(null);
-    } catch {
-      setRefusal(text.errors.readFailed);
-      event.target.value = "";
-    }
+    setBody(extraction.text);
+    setFileName(file.name);
+    if (!titleEdited || !title.trim()) setTitle(file.name);
   }
 
   function removeFile() {
+    choice.current++;
+    setReading(false);
     setBody("");
     setFileName(null);
     if (!titleEdited) setTitle("");
@@ -92,7 +100,7 @@ export function AddDraftForm() {
             ref={fileInput}
             id="draft-file"
             type="file"
-            accept=".txt,text/plain"
+            accept={ACCEPTED_FILES}
             onChange={chooseFile}
             aria-describedby="draft-file-hint"
           />
@@ -101,6 +109,9 @@ export function AddDraftForm() {
               {text.file.remove}
             </button>
           )}
+          <span className="field__hint" role="status">
+            {reading ? text.file.reading : ""}
+          </span>
         </div>
         <p className="field__hint" id="draft-file-hint">
           {text.file.hint}
@@ -149,7 +160,7 @@ export function AddDraftForm() {
       )}
 
       <div>
-        <button className="action" type="submit" disabled={pending}>
+        <button className="action" type="submit" disabled={pending || reading}>
           {pending ? text.pending : text.save}
         </button>
       </div>

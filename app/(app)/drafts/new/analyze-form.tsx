@@ -5,7 +5,8 @@ import type { StoredReport } from "@/lib/analysis/index.ts";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { copy } from "../../copy";
 import { analyzeWithoutAccount, askWithoutAccount } from "../actions";
-import { isPlainText } from "../plain-text";
+import { ACCEPTED_FILES } from "../accepted-files";
+import { readFile } from "../read-file";
 import { DraftReading } from "../draft-reading";
 
 const text = copy.analyze;
@@ -17,7 +18,7 @@ function refusalFor(body: string): string | null {
   return null;
 }
 
-// Paste or choose a .txt file and analyze it, with no account and nothing
+// Paste text or choose a file and analyze it, with no account and nothing
 // stored. Only rendered when this copy of Underline has no Supabase. The
 // report is for the exact text in the box, so changing the text clears it.
 export function AnalyzeForm() {
@@ -25,6 +26,10 @@ export function AnalyzeForm() {
   const [body, setBody] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  // Counts file choices, so a slow read that a later choice or Remove file
+  // has overtaken is dropped.
+  const choice = useRef(0);
   // The report and the exact text it was made from.
   const [result, setResult] = useState<{ report: StoredReport; text: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -41,25 +46,29 @@ export function AnalyzeForm() {
   }
 
   async function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const input = event.target;
+    const file = input.files?.[0];
     if (!file) return;
-    if (!isPlainText(file)) {
-      setMessage(text.errors.notText);
-      event.target.value = "";
+    // Read here, in the browser, and kept exactly as extracted. Only the
+    // text is sent to be analyzed, never the file.
+    const turn = ++choice.current;
+    setReading(true);
+    setMessage(null);
+    const extraction = await readFile(file);
+    if (turn !== choice.current) return;
+    setReading(false);
+    if (!extraction.ok) {
+      setMessage(text.errors[extraction.reason]);
+      input.value = "";
       return;
     }
-    try {
-      // Read here, in the browser, exactly as the file holds it.
-      changeText(await file.text());
-      setFileName(file.name);
-      setMessage(null);
-    } catch {
-      setMessage(text.errors.readFailed);
-      event.target.value = "";
-    }
+    changeText(extraction.text);
+    setFileName(file.name);
   }
 
   function removeFile() {
+    choice.current++;
+    setReading(false);
     changeText("");
     setFileName(null);
     if (fileInput.current) fileInput.current.value = "";
@@ -96,7 +105,7 @@ export function AnalyzeForm() {
               ref={fileInput}
               id="analyze-file"
               type="file"
-              accept=".txt,text/plain"
+              accept={ACCEPTED_FILES}
               onChange={chooseFile}
               disabled={pending}
               aria-describedby="analyze-file-hint"
@@ -106,6 +115,9 @@ export function AnalyzeForm() {
                 {text.file.remove}
               </button>
             )}
+            <span className="field__hint" role="status">
+              {reading ? text.file.reading : ""}
+            </span>
           </div>
           <p className="field__hint" id="analyze-file-hint">
             {text.file.hint}
@@ -137,7 +149,7 @@ export function AnalyzeForm() {
 
         <div className="analysis">
           <div>
-            <button className="action" type="submit" disabled={pending}>
+            <button className="action" type="submit" disabled={pending || reading}>
               {pending ? text.pending : text.submit}
             </button>
           </div>
