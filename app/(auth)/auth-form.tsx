@@ -29,6 +29,26 @@ export function AuthForm({ action, mode }: Props) {
         </p>
       )}
 
+      {mode === "signUp" && (
+        <div className="field">
+          <label htmlFor="invite-code">{copy.fields.inviteCode}</label>
+          <input
+            id="invite-code"
+            name="inviteCode"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            required
+            aria-describedby="invite-code-hint"
+            defaultValue={state.inviteCode}
+          />
+          <p className="field__hint" id="invite-code-hint">
+            {copy.signUp.inviteCodeHint}
+          </p>
+        </div>
+      )}
+
       <div className="field">
         <label htmlFor="email">{copy.fields.email}</label>
         <input

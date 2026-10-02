@@ -1,0 +1,180 @@
+import { isClauseType } from "./catalog.ts";
+import { isConfidence, type ProposedFlag } from "./report.ts";
+
+// Checks the model's structured output. The model client vouches for
+// nothing, so anything that does not match what the prompt asked for fails
+// the whole analysis: a partial Report is never returned. Whether a Source
+// sentence is really in the text is not checked here; that is citation
+// verification, in citations.ts.
+
+export type ModelAnalysis = {
+  summary: string;
+  riskFlags: ProposedFlag[];
+  // The sentence the model quoted as referring to a separate guaranty, or
+  // null when it reported no such reference.
+  guarantyReference: string | null;
+};
+
+export class MalformedModelOutput extends Error {
+  constructor(problem: string) {
+    super(`The model's output was malformed: ${problem}`);
+    this.name = "MalformedModelOutput";
+  }
+}
+
+export function parseAnalysis(data: unknown): ModelAnalysis {
+  const { summary, riskFlags, guarantyReference } = asObject(data, "the output");
+  if (typeof summary !== "string") throw new MalformedModelOutput("summary is missing or not text");
+  if (!summary.trim()) throw new MalformedModelOutput("summary is empty");
+  if (!Array.isArray(riskFlags)) throw new MalformedModelOutput("riskFlags is missing or not a list");
+  return {
+    summary,
+    riskFlags: riskFlags.map((flag, index) => parseFlag(flag, `riskFlags[${index}]`)),
+    guarantyReference: parseGuarantyReference(guarantyReference),
+  };
+}
+
+// Whether the text refers to a separate guaranty, and the sentence that does.
+// The sentence is taken exactly as given; a blank one, when the model says
+// there is a reference, fails verification later rather than here. A
+// sentence given alongside "no reference" is ignored.
+function parseGuarantyReference(value: unknown): string | null {
+  const { refersToSeparateGuaranty, sourceSentence } = asObject(value, "guarantyReference");
+  if (typeof refersToSeparateGuaranty !== "boolean") {
+    throw new MalformedModelOutput("guarantyReference.refersToSeparateGuaranty is not true or false");
+  }
+  if (typeof sourceSentence !== "string") {
+    throw new MalformedModelOutput("guarantyReference.sourceSentence is not text");
+  }
+  return refersToSeparateGuaranty ? sourceSentence : null;
+}
+
+// The answer to the guaranty sentence's regeneration request. An empty string
+// is the model saying it cannot find it, which verification then rejects.
+export function parseGuarantyRequote(data: unknown): string {
+  const { sourceSentence } = asObject(data, "the regeneration");
+  if (typeof sourceSentence !== "string") {
+    throw new MalformedModelOutput("the regeneration's sourceSentence is not text");
+  }
+  return sourceSentence;
+}
+
+// The answer to a regeneration request: the flag's Source sentences, quoted
+// again. An empty list is the model saying it cannot find them, which
+// verification then treats as a failure.
+export function parseRequote(data: unknown): string[] {
+  const { sourceSentences } = asObject(data, "the regeneration");
+  return parseSentences(sourceSentences, "the regeneration's sourceSentences", { allowEmpty: true });
+}
+
+// The answer to a Non-negotiable basis sentence's regeneration. An empty
+// string is the model saying it cannot find one, which verification then
+// rejects.
+export function parseBasisRequote(data: unknown): string {
+  const { sourceSentence } = asObject(data, "the regeneration");
+  if (typeof sourceSentence !== "string") {
+    throw new MalformedModelOutput("the regeneration's sourceSentence is not text");
+  }
+  return sourceSentence;
+}
+
+// The answer to a Counter-offer regeneration. An empty string is the model
+// saying it has no wording to offer, which is recorded as a gap.
+export function parseCounterOffer(data: unknown): string {
+  const { counterOffer } = asObject(data, "the regeneration");
+  if (typeof counterOffer !== "string") throw new MalformedModelOutput("the regeneration's counterOffer is not text");
+  return counterOffer;
+}
+
+// The model's answer to a question: whether the text answers it, the answer,
+// and the sentences it relies on, taken exactly as given. An empty answer or
+// list is allowed here; askDraft turns either into the fixed reply.
+export type ModelQuestionAnswer = {
+  documentAnswers: boolean;
+  answer: string;
+  sourceSentences: string[];
+};
+
+export function parseQuestionAnswer(data: unknown): ModelQuestionAnswer {
+  const { documentAnswers, answer, sourceSentences } = asObject(data, "the answer");
+  if (typeof documentAnswers !== "boolean") throw new MalformedModelOutput("documentAnswers is not true or false");
+  if (typeof answer !== "string") throw new MalformedModelOutput("answer is not text");
+  return {
+    documentAnswers,
+    answer,
+    sourceSentences: parseSentences(sourceSentences, "sourceSentences", { allowEmpty: true }),
+  };
+}
+
+// A catalog flag, or a flag the model says a free-text Red line produced:
+// clause type "redLine" and that Red line's id. The id is matched to the Red
+// lines passed in later, in flags.ts. A catalog flag's redLineId, which the
+// schema sends as an empty string, is ignored. The negotiability call must be
+// one of its two values, but the basis and Counter-offer are only checked to
+// be text: an empty or wrong one is handled after citation verification,
+// in negotiability.ts, so it never hides a flag.
+function parseFlag(value: unknown, where: string): ProposedFlag {
+  const {
+    clauseType,
+    redLineId,
+    sourceSentences,
+    readings,
+    reachesSignerPersonally,
+    negotiability,
+    nonNegotiableBasis,
+    counterOffer,
+    confidence,
+  } = asObject(value, where);
+  if (clauseType !== "redLine" && !isClauseType(clauseType)) {
+    throw new MalformedModelOutput(`${where}.clauseType is not a catalog clause type or redLine`);
+  }
+  if (!Array.isArray(readings) || readings.length < 1 || readings.length > 2) {
+    throw new MalformedModelOutput(`${where}.readings must hold one or two Readings`);
+  }
+  if (!readings.every((reading) => typeof reading === "string" && reading.trim() !== "")) {
+    throw new MalformedModelOutput(`${where}.readings must be non-empty text`);
+  }
+  if (typeof reachesSignerPersonally !== "boolean") {
+    throw new MalformedModelOutput(`${where}.reachesSignerPersonally is not true or false`);
+  }
+  if (negotiability !== "negotiable" && negotiability !== "nonNegotiable") {
+    throw new MalformedModelOutput(`${where}.negotiability is not negotiable or nonNegotiable`);
+  }
+  if (typeof nonNegotiableBasis !== "string") throw new MalformedModelOutput(`${where}.nonNegotiableBasis is not text`);
+  if (typeof counterOffer !== "string") throw new MalformedModelOutput(`${where}.counterOffer is not text`);
+  if (!isConfidence(confidence)) throw new MalformedModelOutput(`${where}.confidence is not high, medium or low`);
+  const call: ProposedFlag["negotiability"] = negotiability;
+  const body = {
+    sourceSentences: parseSentences(sourceSentences, `${where}.sourceSentences`),
+    readings: readings as string[],
+    reachesSignerPersonally,
+    negotiability: call,
+    nonNegotiableBasis,
+    counterOffer,
+    confidence,
+  };
+  if (clauseType !== "redLine") return { clauseType, ...body };
+  if (typeof redLineId !== "string") throw new MalformedModelOutput(`${where}.redLineId is not text`);
+  return { clauseType, redLineId, ...body };
+}
+
+// A list of quoted sentences, taken exactly as given: no trimming or other
+// change, since verification compares them character for character. A
+// blank entry stays in the list and fails verification there.
+function parseSentences(value: unknown, where: string, { allowEmpty = false } = {}): string[] {
+  if (!Array.isArray(value)) throw new MalformedModelOutput(`${where} is missing or not a list`);
+  if (value.length === 0 && !allowEmpty) {
+    throw new MalformedModelOutput(`${where} must hold at least one sentence`);
+  }
+  if (!value.every((sentence) => typeof sentence === "string")) {
+    throw new MalformedModelOutput(`${where} must be text`);
+  }
+  return value as string[];
+}
+
+function asObject(value: unknown, where: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new MalformedModelOutput(`expected ${where} to be an object`);
+  }
+  return value as Record<string, unknown>;
+}

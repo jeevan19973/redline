@@ -1,5 +1,6 @@
 /* Underline app. World: Depth of Reach (see DESIGN.md). Red is reserved for
-   the Dangerous severity label (ADR 0006) and appears nowhere in this file. */
+   the Dangerous severity label (ADR 0006): --dangerous is used by
+   .sev--dangerous and nothing else in this file. */
 
 @font-face {
   font-family: "Sofia Sans";
@@ -47,6 +48,16 @@
   --snow: #E9EEF3;
   --snow-soft: #A9BACA;
   --rule-water: rgba(169, 186, 202, 0.28);
+
+  /* Severity, on its label only */
+  --dangerous: #B3261E;
+  --dangerous-bg: #FDECEA;
+  --caution: #8A5A00;
+  --caution-bg: #FDF3DF;
+
+  /* Clean verdict: a calm neutral, never a success color (ADR 0006) */
+  --clean: #3F4A54;
+  --clean-bg: #EDF0F2;
 
   /* The one brand accent */
   --thermo: #23D6E6;
@@ -102,6 +113,11 @@ button, input { font: inherit; }
   transition: transform 160ms var(--ease-out);
 }
 .skip:focus { transform: translateY(0); }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 
 .wrap {
   width: 100%;
@@ -223,6 +239,13 @@ button, input { font: inherit; }
   line-height: 1.45;
 }
 
+/* ---------- Accounts not set up ---------- */
+
+/* Shown in place of sign-in and the signed-in app when Supabase is absent. */
+.notice { max-width: 480px; display: grid; gap: 14px; }
+.notice .auth__title { margin-bottom: 14px; }
+.notice__body { font-size: 1.125rem; line-height: 1.5; }
+
 /* ---------- Signed-in shell ---------- */
 
 .shell {
@@ -269,8 +292,10 @@ button, input { font: inherit; }
   padding-top: 20px;
   border-top: 1px solid var(--rule-water);
 }
+.rail__limit { display: grid; gap: 4px; }
+.rail__limit-list { display: grid; gap: 2px; font-size: 0.875rem; color: var(--snow); }
 .rail__who { display: grid; gap: 4px; }
-.rail__who-label {
+.rail__label {
   font-family: var(--mono);
   font-weight: 600;
   font-size: 0.6875rem;
@@ -322,6 +347,726 @@ button, input { font: inherit; }
   text-transform: uppercase;
 }
 
+.not-found__link { margin-top: 24px; }
+
+.pane__intro {
+  max-width: 60ch;
+  margin-top: 14px;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Secondary button: paper, ink border, no fill color of its own. */
+.button-secondary {
+  min-height: 36px;
+  padding: 0 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out);
+}
+.button-secondary:hover { background: var(--paper-shade); }
+.button-secondary[aria-disabled="true"] { cursor: progress; opacity: 0.7; }
+
+/* The destructive action: ink, never red. Red means Dangerous (ADR 0006). */
+.button-ink {
+  min-height: 36px;
+  padding: 0 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out);
+}
+.button-ink:hover { background: var(--ink-soft); }
+.button-ink[aria-disabled="true"] { cursor: progress; background: var(--ink-soft); }
+
+/* A confirmation, as an in-page dialog on paper. */
+.confirm {
+  width: min(480px, calc(100% - 32px));
+  max-width: none;
+  padding: 24px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  box-shadow: var(--shadow-slate);
+}
+.confirm[open] { display: grid; gap: 14px; }
+.confirm::backdrop { background: rgba(5, 10, 20, 0.6); }
+.confirm__title {
+  font-weight: 700;
+  font-size: 1.1875rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.confirm__body { font-size: 0.9375rem; line-height: 1.5; }
+.confirm__buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+/* ---------- Add a Draft ---------- */
+
+.draft-form {
+  display: grid;
+  gap: 24px;
+  max-width: 760px;
+  padding-top: 28px;
+}
+.draft-form__file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.draft-form__file input { font-size: 0.9375rem; max-width: 100%; }
+.draft-form__text {
+  width: 100%;
+  min-height: 320px;
+  padding: 14px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: 0;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+.draft-form__text:focus-visible { border-color: var(--ink); }
+.draft-form__text[readonly] { background: var(--paper-shade); }
+.draft-form .form-message { max-width: 60ch; }
+
+/* ---------- Library ---------- */
+
+.library { max-width: 760px; }
+.library__item {
+  display: flex;
+  align-items: center;
+  gap: 8px 16px;
+  border-bottom: 1px solid var(--rule-paper);
+}
+.library__item > .button-secondary { flex: none; }
+.library__status:not(:empty) { margin-top: 20px; }
+.library__link {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 16px 4px;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease-out);
+}
+.library__link:hover { background: var(--paper-shade); }
+.library__link:hover .library__title { text-decoration-color: currentColor; }
+.library__title {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule-paper);
+}
+.library__date {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  font-feature-settings: "tnum" 1;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* ---------- One Draft ---------- */
+
+.draft__title { overflow-wrap: anywhere; }
+.draft__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+.draft__bar .draft__meta { margin-top: 0; }
+.pane__title[tabindex="-1"]:focus { outline: none; }
+.pane__title[tabindex="-1"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.draft__meta {
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  font-feature-settings: "tnum" 1;
+  color: var(--ink-soft);
+}
+.draft__section-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.draft__section-intro { color: var(--ink-soft); max-width: 60ch; }
+
+/* The stored text exactly as saved: every line break and space kept. */
+.document {
+  max-width: 72ch;
+  margin-top: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule-paper);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* ---------- Report ---------- */
+
+.report { display: grid; gap: 24px; padding-top: 28px; max-width: 72ch; }
+.report__head { display: grid; gap: 12px; justify-items: start; }
+.report__head .draft__meta { margin-top: 0; }
+.report__part { display: grid; gap: 10px; }
+.report__part-title {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.report__summary { display: grid; gap: 12px; }
+.report__summary p { max-width: 68ch; }
+
+/* The scope stamp: a hairline stamp at the foot of the report (DESIGN.md). */
+.report__scope {
+  padding: 14px 16px 16px;
+  border: 1px solid var(--rule-paper);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* Analysis in progress, failed, or about to run again. */
+.analysis { display: grid; gap: 14px; justify-items: start; }
+.analysis .form-message { max-width: 60ch; }
+.analysis__status:empty { padding: 0; border: 0; }
+.analysis__status {
+  padding-left: 12px;
+  border-left: 2px solid var(--ink);
+  font-size: 1rem;
+}
+.analysis__rerun { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+
+/* ---------- Risk flags ---------- */
+
+.flags__legend, .flags__note { font-size: 0.9375rem; line-height: 1.5; color: var(--ink-soft); max-width: 60ch; }
+.flags__note { color: var(--ink); }
+.flags { display: grid; gap: 14px; margin-top: 4px; }
+
+/* A flag on the paper pane: paper on paper, so a hairline and no shadow. */
+.flag {
+  padding: 14px 16px 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule-paper);
+  scroll-margin: 24px;
+  transition: box-shadow 220ms var(--ease-out), border-color 220ms var(--ease-out);
+}
+.flag.is-lit { border-color: var(--thermo-deep); box-shadow: 0 0 0 1px var(--thermo-deep); }
+
+.flag__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+/* Severity label: the meaning is the word; color only supports it. */
+.sev {
+  display: inline-block;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 7px 4px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.sev--dangerous { color: var(--dangerous); background: var(--dangerous-bg); }
+.sev--caution { color: var(--caution); background: var(--caution-bg); }
+
+/* Confidence, beside the severity label when the display switch is on: an
+   instrument reading in mono, ink-soft with no border or fill, so it never
+   reads as a second severity. */
+.flag__confidence {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* Depth gauge: the business above the thermocline, the Signer below. The
+   node sits hollow above the line for Caution and cyan below it for
+   Dangerous. Decoration only: the severity word carries the meaning. */
+.gauge {
+  position: relative;
+  flex: none;
+  width: 12px;
+  height: 24px;
+  background: linear-gradient(to bottom, var(--paper-shade) 0 50%, var(--water-3) 50% 100%);
+  border: 1px solid var(--ink-soft);
+}
+.gauge::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: calc(50% - 1px);
+  height: 2px;
+  background: var(--thermo);
+}
+.gauge::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+}
+.gauge--shallow::after { top: 2px; border: 1px solid var(--ink); }
+.gauge--deep::after { bottom: 2px; background: var(--thermo); }
+
+.flag__source { display: grid; gap: 6px; justify-items: start; margin-top: 12px; }
+.flag__quote { margin: 0; font-size: 0.9375rem; line-height: 1.6; }
+
+/* A quoted Source sentence: ink with an ink underline, never a fill. */
+.flag__quote p,
+.cited {
+  text-decoration-line: underline;
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-skip-ink: none;
+}
+.flag.is-lit .flag__quote p { text-decoration-thickness: 3px; }
+
+.flag__cite {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-paper);
+  text-underline-offset: 3px;
+}
+.flag__cite:hover { color: var(--ink); text-decoration-color: currentColor; }
+
+.flag__reading {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule-paper);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+.flag__readings { list-style: decimal; padding-left: 1.4em; display: grid; gap: 4px; }
+
+/* Said in words under the flag's name: which of the Signer's Red lines
+   raised it. Ink, no color of its own. */
+.flag__raised {
+  margin-top: 8px;
+  padding-left: 10px;
+  border-left: 2px solid var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ink);
+  max-width: 60ch;
+}
+
+/* Take it or leave it: the severity label's shape in an ink outline with no
+   fill (ADR 0006), pushed to the end of the flag's header. */
+.tag-fixed {
+  display: inline-block;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 7px 4px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* The Counter-offer, or a Non-negotiable flag's basis, below the Reading. */
+.flag__part {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule-paper);
+}
+.flag__part .flag__source { margin-top: 2px; }
+.flag__part-title {
+  margin: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.flag__part-note { font-size: 0.875rem; line-height: 1.45; color: var(--ink-soft); max-width: 60ch; }
+
+/* Wording the Signer sends as written: ink on paper, set off by an ink rule. */
+.counter {
+  padding-left: 12px;
+  border-left: 2px solid var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  max-width: 64ch;
+}
+.counter__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 4px; }
+.counter__note { font-size: 0.875rem; line-height: 1.45; color: var(--ink); max-width: 52ch; }
+
+/* The Copy button is the secondary button; "Copied" sits on the Clean
+   verdict's pale gray (DESIGN.md). */
+.button-secondary[data-state="done"] { background: var(--clean-bg); }
+
+/* The Red lines a report ran against. */
+.report__red-lines { display: grid; gap: 4px; font-size: 0.9375rem; }
+.report__red-lines li { position: relative; padding-left: 16px; }
+.report__red-lines li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.8em;
+  width: 8px;
+  height: 1px;
+  background: var(--ink-soft);
+}
+
+/* ---------- Guaranty gap ---------- */
+
+/* On paper near the top of the report. Not a Risk flag, so no severity
+   color: an ink rule and the underlined sentence. */
+.gap {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule-paper);
+  border-left: 2px solid var(--ink);
+  scroll-margin: 24px;
+  transition: box-shadow 220ms var(--ease-out), border-color 220ms var(--ease-out);
+}
+.gap.is-lit { border-color: var(--thermo-deep); box-shadow: 0 0 0 1px var(--thermo-deep); }
+.gap.is-lit .flag__quote p { text-decoration-thickness: 3px; }
+.gap__title {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.gap__statement { font-size: 0.9375rem; line-height: 1.5; font-weight: 500; max-width: 60ch; }
+.gap .flag__source { margin-top: 4px; }
+
+/* ---------- Question box ---------- */
+
+/* Under the report, set off by a hairline. The answer sits on paper like a
+   flag, with its Source sentences underlined in ink, never filled. */
+.question {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule-paper);
+  max-width: 72ch;
+}
+.question__form { display: grid; gap: 12px; justify-items: stretch; }
+.question__form .form-message { max-width: 60ch; }
+.question__form .analysis__status { justify-self: start; }
+.question__ask { display: flex; flex-wrap: wrap; gap: 8px; }
+.question__ask input { flex: 1 1 260px; width: auto; }
+.question__ask .button-secondary { min-height: 48px; padding: 0 18px; }
+.question__ask input[readonly] { background: var(--paper-shade); }
+
+.answer {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule-paper);
+  border-left: 2px solid var(--ink);
+  scroll-margin: 24px;
+  outline: none;
+  transition: box-shadow 220ms var(--ease-out), border-color 220ms var(--ease-out);
+}
+.answer:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.answer.is-lit { border-color: var(--thermo-deep); box-shadow: 0 0 0 1px var(--thermo-deep); }
+.answer.is-lit .flag__quote p { text-decoration-thickness: 3px; }
+.answer__title {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.answer__asked { font-size: 0.875rem; line-height: 1.45; color: var(--ink-soft); overflow-wrap: anywhere; }
+.answer__asked-label { font-weight: 600; color: var(--ink); }
+.answer__text { font-size: 0.9375rem; line-height: 1.5; font-weight: 500; max-width: 60ch; }
+.answer__sources { display: grid; gap: 2px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--rule-paper); }
+.answer__sources .flag__source { margin-top: 8px; }
+
+/* ---------- Clean verdict ---------- */
+
+/* Clean Slate gray on pale gray (DESIGN.md): never green, never a
+   checkmark. Pale gray on the paper pane, so no shadow. */
+.verdict {
+  padding: 22px 24px 20px;
+  background: var(--clean-bg);
+  color: var(--clean);
+}
+.verdict__title { font-weight: 700; font-size: 1.1875rem; line-height: 1.3; color: var(--ink); }
+.verdict__text { margin-top: 8px; font-size: 0.9375rem; line-height: 1.5; max-width: 60ch; }
+.verdict__label {
+  margin-top: 18px;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.verdict__list {
+  margin-top: 8px;
+  columns: 2;
+  column-gap: 28px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+/* Each line marked by a short gray dash, then the status in words. */
+.verdict__list li {
+  break-inside: avoid;
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  padding: 5px 0 5px 16px;
+  color: var(--ink);
+}
+.verdict__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.95em;
+  width: 8px;
+  height: 1px;
+  background: var(--clean);
+}
+.verdict__status {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--clean);
+}
+.verdict__list li.is-unchecked .verdict__status {
+  padding: 3px 5px 2px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .verdict { padding: 18px 16px 16px; }
+  .verdict__list { columns: 1; }
+}
+
+/* ---------- Draft text and report, side by side ---------- */
+
+.pane--reading { max-width: 1360px; }
+.reading { display: grid; gap: 24px; padding-top: 24px; }
+.reading .report { padding-top: 0; }
+.reading__pane { min-width: 0; }
+.reading__text { display: grid; gap: 8px; align-content: start; }
+
+/* A cited sentence in the Draft text, linked to its flag. */
+.cited {
+  color: inherit;
+  scroll-margin: 96px;
+  transition: text-decoration-thickness 220ms var(--ease-out);
+}
+.cited.is-lit { text-decoration-thickness: 3px; }
+
+.reading__toggle { display: flex; }
+.reading__toggle button {
+  min-height: 40px;
+  padding: 0 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.reading__toggle button + button { border-left: 0; }
+.reading__toggle button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+@media (max-width: 1199px) {
+  .reading[data-pane="report"] .reading__text,
+  .reading[data-pane="text"] .reading__report { display: none; }
+}
+
+@media (min-width: 1200px) {
+  .reading {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 48px;
+    align-items: start;
+  }
+  .reading__toggle { display: none; }
+  /* The report stays in view while the text scrolls past beside it. */
+  .reading__report {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+}
+
+/* ---------- Analyze without an account ---------- */
+
+.solo {
+  min-height: calc(100dvh - 69px);
+  padding: clamp(20px, 3vw, 40px);
+  background: var(--water-2);
+}
+.solo .pane { min-height: 0; margin-inline: auto; }
+.analyze__result { padding-top: 12px; outline: none; }
+.analyze__result:focus-visible { outline: 2px solid var(--ink); outline-offset: 8px; }
+.analyze__note { margin-top: 20px; font-size: 0.9375rem; color: var(--ink-soft); max-width: 60ch; }
+
+/* ---------- Red lines ---------- */
+
+.red-lines { display: grid; gap: 48px; max-width: 760px; padding-top: 28px; }
+.red-lines__part { display: grid; gap: 12px; align-content: start; }
+.red-lines__part > h2:focus { outline: none; }
+.red-lines__part > h2:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.red-lines__own { display: grid; gap: 16px; justify-items: stretch; }
+.red-lines__own > .analysis__status { justify-self: start; }
+
+.red-lines__list { border-top: 1px solid var(--rule-paper); }
+.red-lines__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--rule-paper);
+}
+.red-lines__label { font-weight: 700; font-size: 1.0625rem; line-height: 1.3; }
+.red-lines__buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.red-lines__edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  width: 100%;
+}
+.red-lines__edit .field { flex: 1 1 260px; }
+.red-lines__add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; }
+.red-lines__add .field { flex: 1 1 280px; }
+/* A free-text Red line is the Signer's own words, so it may be long. */
+.red-lines__label--words { flex: 1 1 260px; overflow-wrap: anywhere; }
+.red-lines__edit input { min-height: 36px; }
+.red-lines__field-error { flex-basis: 100%; max-width: 60ch; }
+
+.field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: 0;
+  font: inherit;
+  font-size: 1rem;
+}
+.field select:focus-visible { border-color: var(--ink); }
+.red-lines__edit select { min-height: 36px; }
+
+.red-lines__notes {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--rule-paper);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* The default catalog: read-only, severity carried by the word. */
+.catalog { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+.catalog th, .catalog td {
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--rule-paper);
+  text-align: left;
+  vertical-align: middle;
+}
+.catalog thead th {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom-color: var(--ink-soft);
+}
+.catalog tbody th { font-weight: 600; }
+.catalog td { width: 1%; white-space: nowrap; }
+
 .empty {
   display: grid;
   gap: 8px;
@@ -357,7 +1102,8 @@ button, input { font: inherit; }
     align-items: center;
     gap: 16px;
   }
-  .rail__who-label { display: none; }
+  .rail__label { display: none; }
+  .rail__limit-list { display: flex; flex-wrap: wrap; gap: 0 12px; font-size: 0.8125rem; }
   .pane { min-height: 0; }
 }
 
