@@ -2,7 +2,7 @@
 
 **What to build:** When a Draft is created, Underline analyzes it and shows a report with a plain-English summary and the scope stamp. This ticket builds the Analysis module as the single test seam (`analyzeDraft(extractedText, redLines, modelClient) -> Report`), the model client port with an OpenRouter adapter and a fake for tests, and the stored Report. Later tickets add rules behind the same interface.
 
-**Blocked by:** 02 (Upload a plain-text file as a Draft)
+**Blocked by:** 02 (Upload a plain-text file or paste text as a Draft)
 
 **Status:** ready-for-agent
 

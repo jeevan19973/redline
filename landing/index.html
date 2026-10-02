@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Underline: see how far each clause reaches</title>
+  <meta name="description" content="Upload a lease, vendor contract, freelance agreement or vendor terms before you sign. Underline ranks what each clause costs you and quotes the exact sentence it came from.">
+  <link rel="preload" href="fonts/sofia-sans-extra-condensed.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/sofia-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/azeret-mono.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="wordmark" href="/" aria-label="Underline, home">Underline</a>
+      <nav class="topbar__nav" aria-label="Account">
+        <a class="link" href="/sign-in">Sign in</a>
+        <a class="action action--small" href="/sign-up">
+          <span>Try it on your document</span>
+          <svg class="action__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" /></svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="dive" data-dive>
+
+      <section class="surface" aria-labelledby="hero-title">
+        <div class="wrap grid">
+          <h1 id="hero-title" class="display surface__title">See how far each clause reaches</h1>
+          <div class="surface__copy">
+            <p class="lede">Upload a lease, vendor contract, freelance agreement or vendor terms before you sign. Underline ranks what each clause costs you and quotes the exact sentence it came from, so you can check every flag against your own copy.</p>
+            <div class="surface__act">
+              <a class="action" href="/sign-up">
+                <span>Try it on your document</span>
+                <svg class="action__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" /></svg>
+              </a>
+              <p class="fine">Invite-only beta. You'll need the invite code you were given.</p>
+              <p class="fine fine--account">Already have an account? <a class="link" href="/sign-in">Sign in</a></p>
+            </div>
+          </div>
+
+          <figure class="lease" aria-labelledby="lease-caption">
+            <figcaption id="lease-caption" class="lease__caption">Example lease, written for this page. Not a real agreement.</figcaption>
+            <p class="lease__title">Commercial Lease</p>
+            <div class="lease__body">
+              <p class="clause"><span class="clause__no">3.1</span><span class="clause__text">The Term begins on the Commencement Date and runs for five years. <span class="cite" data-key="c31" id="s-c31">This Lease shall automatically renew for successive five-year terms unless Tenant delivers written notice of non-renewal at least 180 days before the end of the then-current term.</span></span></p>
+              <p class="clause"><span class="clause__no">5.4</span><span class="clause__text">Rent is due on the first day of each month. <span class="cite" data-key="c54" id="s-c54">Any installment of Rent not received within three days after its due date shall bear a late charge equal to ten percent of the amount due.</span></span></p>
+              <p class="clause"><span class="clause__no">14.2</span><span class="clause__text"><span class="cite" data-key="c142" id="s-c142">Payment of Rent and performance of Tenant's obligations are personally and unconditionally guaranteed by the undersigned Guarantor, individually, and Landlord need not first proceed against Tenant.</span></span></p>
+              <p class="clause"><span class="clause__no">18.6</span><span class="clause__text"><span class="cite" data-key="c186" id="s-c186">Tenant and Guarantor, jointly and severally, shall indemnify and hold Landlord harmless from all claims, losses and expenses arising from Tenant's use of the Premises, without limit as to amount.</span></span></p>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="water water--reach" aria-label="The example lease, ranked by how far each clause reaches">
+        <canvas class="snow" aria-hidden="true"></canvas>
+        <div class="rail" aria-hidden="true">
+          <span class="rail__label rail__label--up mono">The business</span>
+          <span class="rail__label rail__label--down mono">You</span>
+        </div>
+
+        <div class="band band--shallow">
+          <div class="wrap grid">
+            <div class="band-note">
+              <h2 id="above-title" class="band-note__title">Above the line</h2>
+              <p>Clauses that cost the business, such as fees and notice deadlines.</p>
+            </div>
+
+            <div class="slates slates--caution">
+              <article class="slate" id="flag-c31" data-key="c31" aria-labelledby="flag-c31-t">
+                <header class="slate__head"><span class="sev sev--caution">Caution</span><h3 id="flag-c31-t" class="slate__name">Auto-renewal</h3><a class="mono slate__cite" href="#s-c31" aria-label="Find § 3.1 in the example lease">§ 3.1</a></header>
+                <blockquote class="slate__quote"><p>This Lease shall automatically renew for successive five-year terms unless Tenant delivers written notice of non-renewal at least 180 days before the end of the then-current term.</p></blockquote>
+                <p class="slate__reading">The lease renews for another five years unless you give written notice six months before the term ends.</p>
+              </article>
+              <article class="slate" id="flag-c54" data-key="c54" aria-labelledby="flag-c54-t">
+                <header class="slate__head"><span class="sev sev--caution">Caution</span><h3 id="flag-c54-t" class="slate__name">Late fee</h3><a class="mono slate__cite" href="#s-c54" aria-label="Find § 5.4 in the example lease">§ 5.4</a></header>
+                <blockquote class="slate__quote"><p>Any installment of Rent not received within three days after its due date shall bear a late charge equal to ten percent of the amount due.</p></blockquote>
+                <p class="slate__reading">Rent that's three days late costs an extra 10 percent.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="thermocline" role="presentation">
+          <div class="wrap thermocline__inner">
+            <span class="thermocline__above mono">Costs the business</span>
+            <span class="thermocline__label mono">Where your business ends</span>
+            <span class="thermocline__below mono">Reaches you personally</span>
+          </div>
+        </div>
+
+        <div class="band band--deep">
+          <div class="wrap grid">
+            <div class="readout">
+              <h2 id="reach-title" class="readout__title">Ranked by how far they reach</h2>
+              <p class="readout__note">Dangerous first, then Caution. Within each, in the order they appear.</p>
+              <ol class="readout__list">
+                <li><a class="readout__row" href="#flag-c142" data-key="c142"><span class="mono readout__no">1</span><span class="sev sev--dangerous">Dangerous</span><span class="readout__name">Personal guarantee</span><span class="mono readout__cite">§ 14.2</span></a></li>
+                <li><a class="readout__row" href="#flag-c186" data-key="c186"><span class="mono readout__no">2</span><span class="sev sev--dangerous">Dangerous</span><span class="readout__name">Uncapped indemnity, signed personally</span><span class="mono readout__cite">§ 18.6</span></a></li>
+                <li><a class="readout__row" href="#flag-c31" data-key="c31"><span class="mono readout__no">3</span><span class="sev sev--caution">Caution</span><span class="readout__name">Auto-renewal</span><span class="mono readout__cite">§ 3.1</span></a></li>
+                <li><a class="readout__row" href="#flag-c54" data-key="c54"><span class="mono readout__no">4</span><span class="sev sev--caution">Caution</span><span class="readout__name">Late fee</span><span class="mono readout__cite">§ 5.4</span></a></li>
+              </ol>
+            </div>
+
+            <div class="slates slates--dangerous">
+              <article class="slate" id="flag-c142" data-key="c142" aria-labelledby="flag-c142-t">
+                <header class="slate__head"><span class="sev sev--dangerous">Dangerous</span><h3 id="flag-c142-t" class="slate__name">Personal guarantee</h3><a class="mono slate__cite" href="#s-c142" aria-label="Find § 14.2 in the example lease">§ 14.2</a></header>
+                <blockquote class="slate__quote"><p>Payment of Rent and performance of Tenant's obligations are personally and unconditionally guaranteed by the undersigned Guarantor, individually, and Landlord need not first proceed against Tenant.</p></blockquote>
+                <p class="slate__reading">If the business can't pay, the landlord can come to you for the rent, without trying the business first.</p>
+              </article>
+              <article class="slate" id="flag-c186" data-key="c186" aria-labelledby="flag-c186-t">
+                <header class="slate__head"><span class="sev sev--dangerous">Dangerous</span><h3 id="flag-c186-t" class="slate__name">Uncapped indemnity</h3><a class="mono slate__cite" href="#s-c186" aria-label="Find § 18.6 in the example lease">§ 18.6</a></header>
+                <blockquote class="slate__quote"><p>Tenant and Guarantor, jointly and severally, shall indemnify and hold Landlord harmless from all claims, losses and expenses arising from Tenant's use of the Premises, without limit as to amount.</p></blockquote>
+                <p class="slate__reading">You, not only the business, cover the landlord's losses from anything that happens at the premises, with no cap.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <svg class="plumb" aria-hidden="true" focusable="false"></svg>
+    </div>
+
+    <section class="water water--anatomy" aria-labelledby="anatomy-title">
+      <div class="wrap grid">
+        <div class="col-copy">
+          <h2 id="anatomy-title" class="h2">Every flag shows the sentence it came from</h2>
+          <p>Underline quotes the sentence word for word and names its clause, so you can find it in your own copy and judge the flag yourself.</p>
+          <p>Before a flag is shown, Underline checks that its sentence appears in your document exactly as quoted. If it doesn't, you don't see the flag.</p>
+        </div>
+
+        <div class="col-figure">
+          <article class="slate slate--sheet" aria-labelledby="sheet-t">
+            <h3 id="sheet-t" class="visually-hidden">Example flag, part by part</h3>
+            <dl class="sheet">
+              <div class="sheet__row"><dt class="mono">Severity</dt><dd><span class="sev sev--dangerous">Dangerous</span></dd></div>
+              <div class="sheet__row"><dt class="mono">Clause</dt><dd><span class="mono">§ 14.2</span> Personal guarantee</dd></div>
+              <div class="sheet__row"><dt class="mono">Sentence</dt><dd><blockquote class="slate__quote"><p>Payment of Rent and performance of Tenant's obligations are personally and unconditionally guaranteed by the undersigned Guarantor, individually, and Landlord need not first proceed against Tenant.</p></blockquote></dd></div>
+              <div class="sheet__row"><dt class="mono">Reading</dt><dd>If the business can't pay, the landlord can come to you for the rent, without trying the business first.</dd></div>
+              <div class="sheet__row"><dt class="mono">Counter-offer</dt><dd>
+                <p class="counter" id="counter-text">Guarantor's liability is limited to six months of Base Rent and ends once Tenant has paid Rent on time for the first 24 months of the Term.</p>
+                <button class="copy" type="button" data-copy="counter-text"><span data-copy-label>Copy the wording</span></button>
+              </dd></div>
+            </dl>
+          </article>
+
+          <article class="slate slate--fixed" aria-labelledby="fixed-t">
+            <header class="slate__head"><span class="sev sev--caution">Caution</span><h3 id="fixed-t" class="slate__name">Changes the vendor can make alone</h3><span class="tag-fixed mono">Take it or leave it</span></header>
+            <blockquote class="slate__quote"><p>Provider may modify these Terms at any time by posting the revised Terms on its website.</p></blockquote>
+            <p class="slate__reading">The vendor can change the terms after you agree, and posting them online counts as telling you. These are standard terms the vendor won't change, so there's no counter-offer: you accept them or walk away.</p>
+          </article>
+          <p class="figure-note mono">Example flags, written for this page.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="water water--floor" aria-labelledby="line-title">
+      <div class="wrap grid">
+        <div class="col-copy">
+          <h2 id="line-title" class="h2">The line is where your business ends</h2>
+          <p>A clause is Dangerous when it reaches past the business to you: your home, your savings, or work you owned before the deal. Everything else Underline flags is Caution. A clause isn't Dangerous just because it's unusual.</p>
+          <p>Add your own red lines and a clause you won't accept drops below the line. Nothing you change can lift a Dangerous clause back above it.</p>
+        </div>
+
+        <div class="col-figure">
+          <div class="chart" role="group" aria-label="What Underline checks for, by how far each kind of clause reaches">
+            <h3 class="chart__head mono">Costs the business</h3>
+            <ul class="chart__list">
+              <li>Auto-renewal</li>
+              <li>Payment terms that work against you</li>
+              <li>Late fees and penalties</li>
+              <li>Mandatory arbitration and class-action waivers</li>
+              <li>Liability caps that protect the other side</li>
+              <li>Terms the other side can change on its own</li>
+              <li>Security deposits and repair duties</li>
+            </ul>
+            <div class="chart__line" aria-hidden="true"><span class="mono">Where your business ends</span></div>
+            <h3 class="chart__head mono">Reaches you personally</h3>
+            <ul class="chart__list chart__list--deep">
+              <li>Personal guarantees</li>
+              <li>Handing over work you owned before the deal</li>
+              <li>Uncapped indemnity you sign personally</li>
+              <li>Non-competes that bind you, not just the business</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="water water--clean" aria-labelledby="clean-title">
+      <div class="wrap grid grid--mirror">
+        <div class="col-copy">
+          <h2 id="clean-title" class="h2">When nothing reaches you, it says so</h2>
+          <p>Underline doesn't invent small problems to look useful. When no clause reaches past the business and none crosses your red lines, the report says that plainly and lists everything it checked.</p>
+          <p>It describes what the text says. It never tells you a document is safe to sign.</p>
+        </div>
+
+        <div class="col-figure">
+          <article class="verdict" aria-labelledby="verdict-t">
+            <header class="verdict__head">
+              <h3 id="verdict-t" class="verdict__title">Nothing here reaches past the business</h3>
+              <span class="mono verdict__tag">Example report</span>
+            </header>
+            <p class="verdict__text">No clause in this document reaches past the business to you, and none crosses your red lines.</p>
+            <p class="mono verdict__label">Checked for</p>
+            <ul class="verdict__list">
+              <li>Personal guarantees</li>
+              <li>Work you owned before the deal</li>
+              <li>Uncapped indemnity signed personally</li>
+              <li>Non-competes that bind you</li>
+              <li>Auto-renewal</li>
+              <li>Payment terms against you</li>
+              <li>Late fees and penalties</li>
+              <li>Arbitration and class waivers</li>
+              <li>Liability caps for the other side</li>
+              <li>Changes the other side can make alone</li>
+              <li>Security deposits and repairs</li>
+            </ul>
+            <p class="verdict__stamp">This report covers only the exact text you uploaded. If the other side sends a revision, upload it again. Documents you didn't upload, like a separate guaranty, weren't checked.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="water water--reads" aria-labelledby="reads-title">
+      <div class="wrap grid">
+        <h2 id="reads-title" class="h2 reads__title">What it reads, and what it doesn't</h2>
+        <div class="reads__col">
+          <h3 class="reads__head">It reads</h3>
+          <ul class="reads__list">
+            <li>Commercial leases</li>
+            <li>Vendor and service contracts</li>
+            <li>Freelance agreements you sign as the contractor</li>
+            <li>A vendor's terms of service</li>
+          </ul>
+          <p class="reads__formats">From a text-based PDF, a Word document or a plain-text file, or text you paste in.</p>
+        </div>
+        <div class="reads__col">
+          <h3 class="reads__head">It doesn't read</h3>
+          <ul class="reads__list reads__list--not">
+            <li>Scanned or photographed pages</li>
+            <li>Residential leases</li>
+            <li>Documents you didn't upload, such as a separate guaranty</li>
+            <li>Contracts you're already in a dispute over</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="water water--data" aria-labelledby="data-title">
+      <div class="wrap grid">
+        <div class="col-copy">
+          <h2 id="data-title" class="h2">What happens to your document</h2>
+          <p>Your file is opened in your browser, and only its text leaves your computer. Underline stores that text with your account and sends it through OpenRouter to a third-party AI model for analysis. Underline can't promise what that model provider keeps.</p>
+          <p>You can delete a document, and its report, whenever you like.</p>
+        </div>
+        <ol class="route" aria-label="Where your document goes">
+          <li class="route__stop"><span class="mono route__where">Your browser</span><span class="route__what">The file is opened here and never leaves.</span></li>
+          <li class="route__stop"><span class="mono route__where">Underline</span><span class="route__what">The text is stored with your account.</span></li>
+          <li class="route__stop"><span class="mono route__where">Model provider</span><span class="route__what">The text is sent through OpenRouter to be analyzed.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="close" aria-labelledby="close-title">
+      <div class="wrap grid close__grid">
+        <div class="close__inner">
+        <h2 id="close-title" class="display display--close">Try it on your document</h2>
+        <p class="close__text">Underline is in an invite-only beta. Bring the invite code you were given, and a lease or contract you haven't signed yet.</p>
+        <a class="action" href="/sign-up">
+          <span>Try it on your document</span>
+          <svg class="action__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" /></svg>
+        </a>
+        <p class="close__legal">Underline is not legal advice. It tells you what your document says. Whether to sign is your call.</p>
+        </div>
+        <div class="blank" aria-hidden="true">
+          <p class="blank__caption mono">Your lease or contract</p>
+          <div class="blank__rules"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__inner">
+      <span class="wordmark wordmark--small">Underline</span>
+      <a class="link" href="/sign-in">Sign in</a>
+    </div>
+  </footer>
+</body>
+</html>

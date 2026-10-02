@@ -2,7 +2,7 @@
 
 **What to build:** A Signer can upload a text-based PDF or a DOCX, extracted in their browser like a plain-text file. A scanned PDF with no text layer is refused plainly, because there is no OCR and a citation is worthless against misread text (ADR 0001). An unsupported file type gets a plain message telling the Signer to export to a supported format.
 
-**Blocked by:** 02 (Upload a plain-text file as a Draft)
+**Blocked by:** 02 (Upload a plain-text file or paste text as a Draft)
 
 **Status:** ready-for-agent
 

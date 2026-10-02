@@ -45,7 +45,7 @@ Competitors and the free chatbot paraphrase. None was verified to show the exact
 
 ## Capabilities and Constraints
 
-v1 scope (CLAUDE.md): upload and browser-side parse; plain-English summary; Risk flags ranked Dangerous then Caution, each with its Source sentences, a Reading and a Confidence; a Counter-offer for each flagged clause except a Non-negotiable clause; a question box answered only from the document; an editable list of the Signer's Red lines; a saved library of Drafts; one public landing page; invite-only sign-up with single-use codes; a one-time limit of 5 analyses (re-runs included) and 25 questions per Signer.
+v1 scope (CLAUDE.md): upload and browser-side parse, or pasted text; plain-English summary; Risk flags ranked Dangerous then Caution, each with its Source sentences, a Reading and a Confidence; a Counter-offer for each flagged clause except a Non-negotiable clause; a question box answered only from the document; an editable list of the Signer's Red lines; a saved library of Drafts; one public landing page; invite-only sign-up with single-use codes; a one-time limit of 5 analyses (re-runs included) and 25 questions per Signer.
 
 The landing page carries a plain-language data note and a line saying Underline is not legal advice. A formal privacy policy and terms of service are required before any open sign-up. v1 has no analytics.
 
@@ -53,7 +53,7 @@ Every report also carries a scope stamp, and a Clean verdict when nothing is Dan
 
 Excluded on purpose: payments and billing, OCR for scanned documents, sharing between users, omission detection, Draft comparison, residential leases, help after a dispute, and any statement that a document is safe to sign.
 
-Supported files: text-based PDF, DOCX and plain text.
+Supported input: text-based PDF, DOCX and plain-text files, or text pasted in.
 
 Terminology is fixed in CONTEXT.md. Use Signer, Counterparty, Risk flag, Source sentence, Reading, Confidence, Dangerous, Caution, Clean verdict, Draft, Counter-offer, Red line, Non-negotiable clause, and avoid the synonyms it lists.
 

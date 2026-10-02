@@ -39,6 +39,7 @@ v1 is an invite-only beta (ADR 0007). Each sign-up consumes a single-use invite 
 3. As a Signer, I want to see the text Redline extracted before or alongside the report, so that I can confirm it read the document I meant to upload.
 4. As a Signer, I want to be told plainly when a file is a scanned image with no readable text, so that I don't receive a report built on text that was never there.
 5. As a Signer, I want to be told when a file type is not supported, so that I know to export it in a supported format.
+5a. As a Signer, I want to paste a document's text instead of uploading a file, so that I can review terms I can only copy from a web page or an email.
 6. As a Signer, I want to name the Draft (defaulting to the file name), so that I can find it in my library later.
 7. As a Signer, I want to see that analysis is in progress, so that I don't upload the same document twice.
 8. As a Signer, I want a clear message if analysis fails, with the option to retry, so that a model error does not lose my upload.
@@ -140,7 +141,7 @@ v1 is an invite-only beta (ADR 0007). Each sign-up consumes a single-use invite 
 
 ### Modules
 
-- **Text extraction (browser).** Takes a file, returns extracted plain text or a typed refusal (unsupported type, no text layer). Runs only in the browser. The original file is never uploaded or stored. Supported types are text-based PDF, DOCX and plain text. A PDF with no extractable text is refused as scanned; there is no OCR fallback.
+- **Text extraction (browser).** Takes a file, returns extracted plain text or a typed refusal (unsupported type, no text layer). Runs only in the browser. The original file is never uploaded or stored. Supported types are text-based PDF, DOCX and plain text. A PDF with no extractable text is refused as scanned; there is no OCR fallback. The Signer can instead paste the document's text; pasted text is stored exactly as pasted and is what citations are checked against (added 2026-10-01).
 - **Analysis module (the deep module, and the single test seam).** Two operations:
   - `analyzeDraft(extractedText, redLines, modelClient) -> Report`
   - `askDraft(extractedText, question, modelClient) -> Answer`

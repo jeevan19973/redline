@@ -24,7 +24,7 @@ Do not reopen these.
 
 Build these and stop:
 
-1. Upload and browser-side parse
+1. Upload and browser-side parse, or paste the document's text
 2. Plain-English summary
 3. Risk flags ranked by severity, each showing its source sentence
 4. A drafted counter-offer for each flagged clause, except a Non-negotiable
