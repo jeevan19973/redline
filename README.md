@@ -1,5 +1,7 @@
 # Underline
 
+Production: https://redline-nine-iota.vercel.app
+
 Underline reads a contract before a small business owner signs it and shows
 ranked risk flags, each quoting the exact sentence it came from. The repository
 and its GitHub remote are still named `redline` (ADR 0006).
@@ -57,6 +59,16 @@ mail catcher at http://127.0.0.1:54324.
 Every Risk flag stores a Confidence that Signers do not see until you set `UNDERLINE_SHOW_CONFIDENCE=true` in `.env.local` and restart the app (ADR 0004).
 
 Stop Supabase with `npm run db:stop`.
+
+## Production settings
+
+Production needs these four settings. Each one is set on Vercel, for the
+production environment, and in `.env.local`:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL`
 
 ## Invite codes
 
