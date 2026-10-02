@@ -19,7 +19,9 @@ export type {
   CheckedClause,
   CitationFailure,
   CleanVerdict,
+  Confidence,
   CounterOfferGap,
+  DisplayOptions,
   FlagCitationFailure,
   GuarantyCitationFailure,
   GuarantyGap,
@@ -29,6 +31,7 @@ export type {
   RedLineRiskFlag,
   Report,
   RiskFlag,
+  ShownRiskFlag,
   SourceSentence,
   StoredReport,
 } from "./report.ts";
@@ -57,6 +60,9 @@ export { FIXED_COPY } from "./templates.ts";
 // model gives no Counter-offer, even after a regeneration, shows without one
 // and is recorded in counterOfferGaps. Negotiability never hides a flag or
 // changes its severity.
+// Every flag carries the model's Confidence in its Reading, which nothing
+// here reads: it never changes a severity, the order, raising, the Clean
+// verdict or whether a flag shows (ADR 0004).
 export async function analyzeDraft(
   extractedText: string,
   redLines: readonly RedLine[],

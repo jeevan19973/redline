@@ -26,6 +26,8 @@ try {
     const name =
       flag.clauseType === "redLine" ? `Red line ${JSON.stringify(flag.crossesRedLine.text)}` : clauseTypeLabel(flag.clauseType);
     console.log(`\n${index + 1}. ${flag.severity}: ${name} (${flag.clauseType})`);
+    // For the maintainer, whatever the display switch says.
+    console.log(`   Confidence: ${flag.confidence}`);
     for (const reading of flag.readings) console.log(`   Reading: ${reading}`);
     for (const sentence of flag.sourceSentences) {
       console.log(`   Source sentence at offset ${sentence.offset}: ${JSON.stringify(sentence.text)}`);

@@ -45,6 +45,7 @@ export type ModelFlag = {
   negotiability: "negotiable" | "nonNegotiable";
   nonNegotiableBasis: string;
   counterOffer: string;
+  confidence: "high" | "medium" | "low";
 };
 
 // The Counter-offer the model would write for a planted clause. Scripted
@@ -56,8 +57,8 @@ export function counterOfferFor(clause: PlantedClause): string {
 // The flag the model would return for one planted clause: its sentence
 // verbatim, one Reading, the personal-reach fact the sidecar's expected
 // severity implies (a planted clause is Dangerous only because it reaches
-// the Signer personally), and negotiable with a Counter-offer. `overrides`
-// replaces any field.
+// the Signer personally), negotiable with a Counter-offer, and high
+// Confidence. `overrides` replaces any field.
 export function modelFlag(clause: PlantedClause, overrides: Partial<ModelFlag> = {}): ModelFlag {
   return {
     clauseType: clause.clauseType,
@@ -67,6 +68,7 @@ export function modelFlag(clause: PlantedClause, overrides: Partial<ModelFlag> =
     negotiability: "negotiable",
     nonNegotiableBasis: "",
     counterOffer: counterOfferFor(clause),
+    confidence: "high",
     ...overrides,
   };
 }
@@ -83,8 +85,8 @@ export function nonNegotiableFlag(
 
 // The flag the model would return for a free-text Red line: clause type
 // "redLine", the Red line's id, and the given sentence quoted as is, with
-// the personal-reach fact false and a Counter-offer unless `overrides` says
-// otherwise.
+// the personal-reach fact false, a Counter-offer and high Confidence unless
+// `overrides` says otherwise.
 export function redLineFlag(redLineId: string, sentence: string, overrides: Partial<ModelFlag> = {}): ModelFlag {
   return {
     clauseType: "redLine",
@@ -95,6 +97,7 @@ export function redLineFlag(redLineId: string, sentence: string, overrides: Part
     negotiability: "negotiable",
     nonNegotiableBasis: "",
     counterOffer: "Replacement wording for the clause with a term on your Red lines.",
+    confidence: "high",
     ...overrides,
   };
 }

@@ -1,6 +1,26 @@
 import { isClauseType, type ClauseType, type Severity } from "./catalog.ts";
 import { isRedLine, type CatalogRedLine, type FreeTextRedLine, type RedLine } from "./red-lines.ts";
 
+// How sure Underline is of a flag's Reading (ADR 0004), as the model rated
+// it. It answers a different question from severity, so nothing that decides
+// severity, ordering, raising, the Severity floor, the Clean verdict or
+// whether a flag shows ever reads it: those rules see a Judged flag, which
+// has no Confidence (below). It is only carried to the Report and, when the
+// display switch is on, shown.
+export const CONFIDENCE_LEVELS = ["high", "medium", "low"] as const;
+
+export type Confidence = (typeof CONFIDENCE_LEVELS)[number];
+
+export function isConfidence(value: unknown): value is Confidence {
+  return (CONFIDENCE_LEVELS as readonly unknown[]).includes(value);
+}
+
+// A flag type as the severity, ordering, raising, Severity floor, Clean
+// verdict and visibility rules see it: without its Confidence. Those rules
+// take Judged flags (or a type parameter bounded by one), so reading
+// Confidence there does not typecheck. Distributes over a union.
+export type Judged<T> = T extends unknown ? Omit<T, "confidence"> : never;
+
 // A Source sentence on a shown Risk flag: the exact text, verified as a
 // substring of the stored text, and where it starts there. The offset is a
 // JavaScript string index (UTF-16 code units), the first place the sentence
@@ -67,7 +87,12 @@ export type Negotiability =
 // A Risk flag of either shape, before negotiability.
 type FlagWithoutNegotiability = CatalogRiskFlag | RedLineRiskFlag;
 
-export type RiskFlag = FlagWithoutNegotiability & Negotiability;
+export type RiskFlag = FlagWithoutNegotiability & Negotiability & { readonly confidence: Confidence };
+
+// A Risk flag as the Signer's browser receives it. Its Confidence is there
+// only when the display switch is on, and absent on a Report stored before
+// Confidence existed.
+export type ShownRiskFlag = Judged<RiskFlag> & { readonly confidence?: Confidence };
 
 // A Risk flag read back from a Report stored before negotiability existed:
 // it was never checked for it, so it shows neither a Counter-offer nor a
@@ -76,6 +101,7 @@ export type OlderRiskFlag = FlagWithoutNegotiability & {
   readonly negotiability?: never;
   readonly counterOffer?: never;
   readonly nonNegotiableBasis?: never;
+  readonly confidence?: never;
 };
 
 // What every flag the model proposes carries, before verification. The
@@ -88,6 +114,7 @@ type ProposedFlagBody = {
   readonly negotiability: "negotiable" | "nonNegotiable";
   readonly nonNegotiableBasis: string;
   readonly counterOffer: string;
+  readonly confidence: Confidence;
 };
 
 // A flag as the model proposed it on a catalog clause type.
@@ -175,7 +202,7 @@ export type CleanVerdict = {
   readonly checked: readonly CheckedClause[];
 };
 
-// What a Report holds. A later ticket adds Confidence.
+// What a Report holds.
 export type ReportContent = {
   readonly summary: string;
   // Dangerous first, then by the offset of each flag's first Source sentence.
@@ -214,29 +241,47 @@ export type Report = ReportContent & { readonly [reportBrand]: true };
 // never reach the browser, and neither do unmatched Red line flags or
 // Counter-offer gaps. `riskFlags` is absent on a Report stored before Risk
 // flags existed, which was never checked for them, and its flags lack
-// negotiability on one stored before that existed.
+// negotiability on one stored before that existed. Its flags carry their
+// Confidence only when the display switch is on (DisplayOptions).
 export type StoredReport = Omit<
   ReportContent,
   "riskFlags" | "citationFailures" | "unmatchedRedLineFlags" | "counterOfferGaps"
 > & {
-  readonly riskFlags?: readonly (RiskFlag | OlderRiskFlag)[];
+  readonly riskFlags?: readonly (ShownRiskFlag | OlderRiskFlag)[];
 };
+
+// How a Report is prepared for the Signer. Every caller must say whether
+// Confidence is shown, so it cannot reach the browser by default. The app
+// reads the switch from the environment (lib/env.ts); this module never does.
+export type DisplayOptions = { readonly showConfidence: boolean };
 
 export function brandReport(content: ReportContent): Report {
   return Object.freeze({ ...content }) as Report;
 }
 
 // The part of a fresh Report the Signer may see, for sending to the browser.
-export function displayReport(report: Report): StoredReport {
+// With the switch off, every flag's Confidence is left out too.
+export function displayReport(report: Report, options: DisplayOptions): StoredReport {
   const { citationFailures: _withheld, unmatchedRedLineFlags: _dropped, counterOfferGaps: _gaps, ...shown } = report;
-  return shown;
+  return withConfidenceShownOrNot(shown, options);
+}
+
+// Leaves the flags' Confidence in place with the switch on, and takes it off
+// every flag with it off, so it is not in the page at all.
+function withConfidenceShownOrNot(report: StoredReport, { showConfidence }: DisplayOptions): StoredReport {
+  if (showConfidence || report.riskFlags === undefined) return report;
+  return {
+    ...report,
+    riskFlags: report.riskFlags.map(({ confidence: _hidden, ...flag }) => flag as ShownRiskFlag | OlderRiskFlag),
+  };
 }
 
 // Reads a stored Report back for display, or returns null when the value is
 // not a well-formed one (a Signer can write their own report rows, so the
 // stored JSON is not trusted). Citation failures, unmatched Red line flags
-// and Counter-offer gaps are dropped.
-export function readStoredReport(value: unknown): StoredReport | null {
+// and Counter-offer gaps are dropped, and so is every flag's Confidence with
+// the display switch off.
+export function readStoredReport(value: unknown, options: DisplayOptions): StoredReport | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const { summary, riskFlags, cleanVerdict, guarantyGap, scopeStamp, redLinesSnapshot, modelId, createdAt } =
     value as Record<string, unknown>;
@@ -260,7 +305,7 @@ export function readStoredReport(value: unknown): StoredReport | null {
   };
   if (riskFlags === undefined) return base;
   if (!Array.isArray(riskFlags) || !riskFlags.every((flag) => isRiskFlag(flag, redLinesSnapshot))) return null;
-  return { ...base, riskFlags };
+  return withConfidenceShownOrNot({ ...base, riskFlags }, options);
 }
 
 function isCleanVerdict(value: unknown): value is CleanVerdict {
@@ -293,11 +338,23 @@ function isText(value: unknown): value is string {
   return typeof value === "string" && value.trim() !== "";
 }
 
-function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value is RiskFlag | OlderRiskFlag {
+function isRiskFlag(value: unknown, redLinesSnapshot: readonly RedLine[]): value is ShownRiskFlag | OlderRiskFlag {
   if (typeof value !== "object" || value === null) return false;
-  const { clauseType, severity, sourceSentences, readings, reachesSignerPersonally, raisedByRedLine, crossesRedLine } =
-    value as Record<string, unknown>;
+  const {
+    clauseType,
+    severity,
+    sourceSentences,
+    readings,
+    reachesSignerPersonally,
+    raisedByRedLine,
+    crossesRedLine,
+    negotiability,
+    confidence,
+  } = value as Record<string, unknown>;
   if (!hasNegotiability(value as Record<string, unknown>)) return false;
+  // Absent on a flag stored before Confidence existed, and so on every flag
+  // stored before negotiability did.
+  if (confidence !== undefined && (negotiability === undefined || !isConfidence(confidence))) return false;
   if (clauseType === "redLine") {
     // An added flag is never raised, and it crosses a free-text Red line the
     // report ran against, exactly as that Red line was snapshotted.

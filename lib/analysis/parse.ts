@@ -1,5 +1,5 @@
 import { isClauseType } from "./catalog.ts";
-import type { ProposedFlag } from "./report.ts";
+import { isConfidence, type ProposedFlag } from "./report.ts";
 
 // Checks the model's structured output. The model client vouches for
 // nothing, so anything that does not match what the prompt asked for fails
@@ -103,6 +103,7 @@ function parseFlag(value: unknown, where: string): ProposedFlag {
     negotiability,
     nonNegotiableBasis,
     counterOffer,
+    confidence,
   } = asObject(value, where);
   if (clauseType !== "redLine" && !isClauseType(clauseType)) {
     throw new MalformedModelOutput(`${where}.clauseType is not a catalog clause type or redLine`);
@@ -121,6 +122,7 @@ function parseFlag(value: unknown, where: string): ProposedFlag {
   }
   if (typeof nonNegotiableBasis !== "string") throw new MalformedModelOutput(`${where}.nonNegotiableBasis is not text`);
   if (typeof counterOffer !== "string") throw new MalformedModelOutput(`${where}.counterOffer is not text`);
+  if (!isConfidence(confidence)) throw new MalformedModelOutput(`${where}.confidence is not high, medium or low`);
   const call: ProposedFlag["negotiability"] = negotiability;
   const body = {
     sourceSentences: parseSentences(sourceSentences, `${where}.sourceSentences`),
@@ -129,6 +131,7 @@ function parseFlag(value: unknown, where: string): ProposedFlag {
     negotiability: call,
     nonNegotiableBasis,
     counterOffer,
+    confidence,
   };
   if (clauseType !== "redLine") return { clauseType, ...body };
   if (typeof redLineId !== "string") throw new MalformedModelOutput(`${where}.redLineId is not text`);

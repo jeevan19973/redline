@@ -210,7 +210,7 @@ describe("analyzeDraft: guaranty gap", () => {
       expect(report.cleanVerdict!.notes).toContain(FIXED_COPY["cleanVerdict.guarantyUnverifiedNote"]);
       // Nothing unverified reaches the Signer: the failed sentence is nowhere
       // in what they can see.
-      expect(JSON.stringify(readStoredReport(JSON.parse(JSON.stringify(report))))).not.toContain(wrong);
+      expect(JSON.stringify(readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true }))).not.toContain(wrong);
     });
   });
 
@@ -258,7 +258,7 @@ describe("readStoredReport: Clean verdict and guaranty gap", () => {
       [],
       fakeModelClient({ data: analysisPayload(lease, { riskFlags: cautionFlags }) }),
     );
-    const stored = readStoredReport(JSON.parse(JSON.stringify(report)));
+    const stored = readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true });
     expect(stored?.cleanVerdict).toEqual(report.cleanVerdict);
     expect(stored?.guarantyGap).toEqual(report.guarantyGap);
   });
@@ -266,7 +266,7 @@ describe("readStoredReport: Clean verdict and guaranty gap", () => {
   it("reads a Report stored before either existed", async () => {
     const report = await analyzeDraft(clean.text, [], fakeModelClient({ data: analysisPayload(clean) }));
     const { cleanVerdict: _verdict, ...older } = JSON.parse(JSON.stringify(report));
-    const stored = readStoredReport(older);
+    const stored = readStoredReport(older, { showConfidence: true });
     expect(stored).not.toBeNull();
     expect(stored?.cleanVerdict).toBeUndefined();
   });
@@ -274,7 +274,7 @@ describe("readStoredReport: Clean verdict and guaranty gap", () => {
   it("refuses a stored Report whose verdict is malformed", async () => {
     const report = await analyzeDraft(clean.text, [], fakeModelClient({ data: analysisPayload(clean) }));
     const value = JSON.parse(JSON.stringify(report));
-    expect(readStoredReport({ ...value, cleanVerdict: { title: "Safe to sign" } })).toBeNull();
-    expect(readStoredReport({ ...value, guarantyGap: { statement: "Not checked." } })).toBeNull();
+    expect(readStoredReport({ ...value, cleanVerdict: { title: "Safe to sign" } }, { showConfidence: true })).toBeNull();
+    expect(readStoredReport({ ...value, guarantyGap: { statement: "Not checked." } }, { showConfidence: true })).toBeNull();
   });
 });

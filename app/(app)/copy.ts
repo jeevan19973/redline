@@ -90,6 +90,12 @@ export const copy = {
       basisNote: "That sentence shows the terms aren't open to change, so you can accept this clause as written or walk away.",
     },
     severity: { Dangerous: "Dangerous", Caution: "Caution" },
+    // Shown only when the Confidence display switch is on (ADR 0004).
+    confidence: {
+      label: { high: "Confidence: high", medium: "Confidence: medium", low: "Confidence: low" },
+      legend:
+        "Each flag has two labels. Dangerous or Caution says how bad the clause is if Underline has read it right. Confidence says how sure Underline is of that reading, so a Dangerous flag with low confidence is still Dangerous.",
+    },
     verdict: {
       listTitle: "Checked for",
       checked: "Checked",

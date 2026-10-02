@@ -168,7 +168,7 @@ describe("Reports with flags a free-text Red line added", () => {
 
   it("reads an added flag back from storage with the Red line it crosses", async () => {
     const report = await reportWithAdded();
-    const stored = readStoredReport(JSON.parse(JSON.stringify(report)));
+    const stored = readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true });
     expect(stored?.riskFlags).toEqual(report.riskFlags);
     expect(stored?.redLinesSnapshot).toEqual([onEntry]);
   });
@@ -181,18 +181,18 @@ describe("Reports with flags a free-text Red line added", () => {
       ...report,
       riskFlags: report.riskFlags.map((candidate: unknown, at: number) => (at === index ? flag : candidate)),
     });
-    expect(readStoredReport(withFlag(added))).not.toBeNull();
-    expect(readStoredReport(withFlag({ ...added, crossesRedLine: { ...onEntry, text: "something else" } }))).toBeNull();
-    expect(readStoredReport(withFlag({ ...added, crossesRedLine: { ...onEntry, id: "red-line-other" } }))).toBeNull();
-    expect(readStoredReport(withFlag({ ...added, crossesRedLine: undefined }))).toBeNull();
-    expect(readStoredReport(withFlag({ ...added, raisedByRedLine: onAutoRenewal }))).toBeNull();
+    expect(readStoredReport(withFlag(added), { showConfidence: true })).not.toBeNull();
+    expect(readStoredReport(withFlag({ ...added, crossesRedLine: { ...onEntry, text: "something else" } }), { showConfidence: true })).toBeNull();
+    expect(readStoredReport(withFlag({ ...added, crossesRedLine: { ...onEntry, id: "red-line-other" } }), { showConfidence: true })).toBeNull();
+    expect(readStoredReport(withFlag({ ...added, crossesRedLine: undefined }), { showConfidence: true })).toBeNull();
+    expect(readStoredReport(withFlag({ ...added, raisedByRedLine: onAutoRenewal }), { showConfidence: true })).toBeNull();
   });
 
   it("keeps unmatched Red line flags off the Report the Signer sees", async () => {
     const stray = redLineFlag("red-line-not-set", entrySentence);
     const report = await analyzeDraft(lease.text, [onEntry], fakeModelClient({ data: cautionOnly([stray]) }));
     expect(report.unmatchedRedLineFlags).toHaveLength(1);
-    expect(displayReport(report)).not.toHaveProperty("unmatchedRedLineFlags");
-    expect(displayReport(report)).not.toHaveProperty("citationFailures");
+    expect(displayReport(report, { showConfidence: true })).not.toHaveProperty("unmatchedRedLineFlags");
+    expect(displayReport(report, { showConfidence: true })).not.toHaveProperty("citationFailures");
   });
 });

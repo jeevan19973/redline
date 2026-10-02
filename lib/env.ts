@@ -27,3 +27,11 @@ export function requireSupabaseConfig(): SupabaseConfig {
   }
   return config;
 }
+
+// Whether Signers see each Risk flag's Confidence (ADR 0004). Off unless
+// UNDERLINE_SHOW_CONFIDENCE is exactly "true": the labels stay hidden until
+// the calibration eval passes. Server-only and read at request time, so it
+// is never inlined into the browser bundle; this is the one place it is read.
+export function showConfidence(): boolean {
+  return process.env.UNDERLINE_SHOW_CONFIDENCE === "true";
+}

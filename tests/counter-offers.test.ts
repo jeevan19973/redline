@@ -270,17 +270,17 @@ describe("readStoredReport and displayReport: negotiability", () => {
     const report = await mixedReport();
     expect(report.counterOfferGaps).toHaveLength(1);
 
-    const stored = readStoredReport(JSON.parse(JSON.stringify(report)));
+    const stored = readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true });
     expect(stored?.riskFlags).toEqual(report.riskFlags);
     expect(stored).not.toHaveProperty("counterOfferGaps");
-    expect(displayReport(report)).not.toHaveProperty("counterOfferGaps");
+    expect(displayReport(report, { showConfidence: true })).not.toHaveProperty("counterOfferGaps");
   });
 
   it("refuses a stored Non-negotiable flag that carries a Counter-offer", async () => {
     const stored = JSON.parse(JSON.stringify(await mixedReport()));
     const fixed = stored.riskFlags.find((flag: { negotiability: string }) => flag.negotiability === "nonNegotiable");
     fixed.counterOffer = "Wording written into the row.";
-    expect(readStoredReport(stored)).toBeNull();
+    expect(readStoredReport(stored, { showConfidence: true })).toBeNull();
   });
 
   it("reads flags stored before negotiability existed, with none of its fields", async () => {
@@ -289,8 +289,10 @@ describe("readStoredReport and displayReport: negotiability", () => {
       delete flag.negotiability;
       delete flag.counterOffer;
       delete flag.nonNegotiableBasis;
+      // Confidence came later still.
+      delete flag.confidence;
     }
-    const read = readStoredReport(stored);
+    const read = readStoredReport(stored, { showConfidence: true });
     expect(read?.riskFlags).toHaveLength(3);
     expect(read?.riskFlags?.every((flag) => flag.negotiability === undefined)).toBe(true);
   });

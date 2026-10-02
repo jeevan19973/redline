@@ -172,7 +172,7 @@ describe("analyzeDraft: Red lines snapshot", () => {
 describe("readStoredReport: raised flags", () => {
   it("reads a raised flag back with the Red line that raised it", async () => {
     const report = await analyzeLease([onAutoRenewal]);
-    const stored = readStoredReport(JSON.parse(JSON.stringify(report)));
+    const stored = readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true });
     expect(stored?.riskFlags).toEqual(report.riskFlags);
     expect(stored?.redLinesSnapshot).toEqual([onAutoRenewal]);
   });
@@ -185,8 +185,8 @@ describe("readStoredReport: raised flags", () => {
       riskFlags: report.riskFlags.map((candidate: unknown, at: number) => (at === index ? flag : candidate)),
     });
     const raised = report.riskFlags[index];
-    expect(readStoredReport(withFlag({ ...raised, severity: "Caution" }))).toBeNull();
-    expect(readStoredReport(withFlag({ ...raised, raisedByRedLine: { ...onNonCompete } }))).toBeNull();
-    expect(readStoredReport(withFlag({ ...raised, raisedByRedLine: { id: "x", kind: "freeText", text: "renews" } }))).toBeNull();
+    expect(readStoredReport(withFlag({ ...raised, severity: "Caution" }), { showConfidence: true })).toBeNull();
+    expect(readStoredReport(withFlag({ ...raised, raisedByRedLine: { ...onNonCompete } }), { showConfidence: true })).toBeNull();
+    expect(readStoredReport(withFlag({ ...raised, raisedByRedLine: { id: "x", kind: "freeText", text: "renews" } }), { showConfidence: true })).toBeNull();
   });
 });

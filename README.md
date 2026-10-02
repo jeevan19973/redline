@@ -54,6 +54,8 @@ Locally, sign-up needs no email confirmation, so a new account is signed in
 straight away. Supabase Studio runs at http://127.0.0.1:54323 and the local
 mail catcher at http://127.0.0.1:54324.
 
+Every Risk flag stores a Confidence that Signers do not see until you set `UNDERLINE_SHOW_CONFIDENCE=true` in `.env.local` and restart the app (ADR 0004).
+
 Stop Supabase with `npm run db:stop`.
 
 ## Checks

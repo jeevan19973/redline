@@ -297,7 +297,7 @@ describe("readStoredReport: Risk flags", () => {
     );
     expect(report.citationFailures).toHaveLength(1);
 
-    const stored = readStoredReport(JSON.parse(JSON.stringify(report)));
+    const stored = readStoredReport(JSON.parse(JSON.stringify(report)), { showConfidence: true });
     expect(stored?.riskFlags).toEqual(report.riskFlags);
     expect(stored).not.toHaveProperty("citationFailures");
   });
@@ -305,7 +305,7 @@ describe("readStoredReport: Risk flags", () => {
   it("reads a Report stored before Risk flags existed, with no flags field", async () => {
     const report = await analyzeDraft(clean.text, [], fakeModelClient({ data: analysisPayload(clean) }));
     const { riskFlags: _flags, citationFailures: _failures, ...older } = JSON.parse(JSON.stringify(report));
-    const stored = readStoredReport(older);
+    const stored = readStoredReport(older, { showConfidence: true });
     expect(stored).not.toBeNull();
     expect(stored?.riskFlags).toBeUndefined();
   });

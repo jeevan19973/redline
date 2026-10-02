@@ -4,7 +4,7 @@ import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { analyzeDraft, displayReport, type Report, type StoredReport } from "@/lib/analysis/index.ts";
 import { fitsInOneSave } from "@/lib/draft-limits";
-import { supabaseConfig } from "@/lib/env";
+import { showConfidence, supabaseConfig } from "@/lib/env";
 import { openRouterClient } from "@/lib/model/openrouter.ts";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "../copy";
@@ -148,7 +148,7 @@ export async function analyzeWithoutAccount(text: unknown): Promise<AnalyzeWitho
     for (const gap of report.counterOfferGaps) {
       console.error("Showed a negotiable Risk flag with no Counter-offer", gap.flag.clauseType);
     }
-    return { report: displayReport(report) };
+    return { report: displayReport(report, { showConfidence: showConfidence() }) };
   } catch (error) {
     console.error("Analysis failed", error instanceof Error ? error.message : error);
     return { error: errors.failed };

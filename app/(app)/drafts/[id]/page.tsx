@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { readStoredReport, type StoredReport } from "@/lib/analysis/index.ts";
-import { supabaseConfig } from "@/lib/env";
+import { showConfidence, supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsUnavailable } from "../../../_accounts-unavailable/notice";
 import { copy } from "../../copy";
@@ -42,7 +42,7 @@ async function getReport(draftId: string): Promise<StoredState> {
     .maybeSingle<{ report: unknown }>();
   if (error) console.error("Could not load a Report", error.code, error.message);
   if (!data) return { kind: "none" };
-  const report = readStoredReport(data.report);
+  const report = readStoredReport(data.report, { showConfidence: showConfidence() });
   return report ? { kind: "report", report } : { kind: "unreadable" };
 }
 

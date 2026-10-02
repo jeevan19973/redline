@@ -3,8 +3,8 @@ import {
   type CleanVerdict,
   type GuarantyGap,
   type OlderRiskFlag,
-  type RiskFlag,
   type RedLine,
+  type ShownRiskFlag,
   type SourceSentence,
   type StoredReport,
 } from "@/lib/analysis/index.ts";
@@ -49,6 +49,9 @@ export function ReportView({
   const gapIndex = report.riskFlags?.length ?? 0;
   // With a Clean verdict and nothing flagged, the verdict says it all.
   const showFlags = !(report.cleanVerdict && report.riskFlags?.length === 0);
+  // Confidence reaches the browser only when the display switch is on, so
+  // whether to explain it is read off the flags themselves.
+  const withConfidence = report.riskFlags?.some((flag) => flag.confidence !== undefined) ?? false;
 
   return (
     <section className="report" aria-labelledby="report-title">
@@ -93,6 +96,7 @@ export function ReportView({
           ) : (
             <>
               <p className="flags__legend">{text.flags.legend}</p>
+              {withConfidence && <p className="flags__legend">{text.confidence.legend}</p>}
               <ol className="flags">
                 {report.riskFlags.map((flag, index) => (
                   <li key={index}>
@@ -204,8 +208,18 @@ function CleanVerdictCard({ verdict }: { verdict: CleanVerdict }) {
 // with its Copy button, or for a Non-negotiable flag the take-it-or-leave-it
 // label in the header and the quoted sentence it rests on. The gauge shows reach, not rank:
 // a flag a Red line raised still reaches only the business, so it stays
-// shallow while its label says Dangerous.
-function FlagSlate({ flag, index, linking }: { flag: RiskFlag | OlderRiskFlag; index: number; linking: FlagLinking }) {
+// shallow while its label says Dangerous. Its Confidence, in words after
+// the severity and its gauge, shows only when it arrived with the flag (the display
+// switch is on); it changes nothing else about the flag.
+function FlagSlate({
+  flag,
+  index,
+  linking,
+}: {
+  flag: ShownRiskFlag | OlderRiskFlag;
+  index: number;
+  linking: FlagLinking;
+}) {
   const id = `flag-${index + 1}`;
   const dangerous = flag.severity === "Dangerous";
   const deep = dangerous && !flag.raisedByRedLine;
@@ -226,6 +240,13 @@ function FlagSlate({ flag, index, linking }: { flag: RiskFlag | OlderRiskFlag; i
         <h4 className="flag__name" id={`${id}-name`}>
           <span className={`sev ${dangerous ? "sev--dangerous" : "sev--caution"}`}>{text.severity[flag.severity]}</span>
           <span className={`gauge ${deep ? "gauge--deep" : "gauge--shallow"}`} aria-hidden="true" />
+          {flag.confidence && (
+            <span className="flag__confidence">
+              <span className="visually-hidden">, </span>
+              {text.confidence.label[flag.confidence]}
+              <span className="visually-hidden">,</span>
+            </span>
+          )}
           <span className="flag__type">
             {flag.clauseType === "redLine" ? text.flags.redLineType : clauseTypeLabel(flag.clauseType)}
           </span>

@@ -19,6 +19,7 @@ stops early. The final section lists what to run first.
 | 08 The Signer's Red lines raise severity, with the Severity floor | done | 119 tests. red_lines RLS checked in a rolled-back transaction; screen not run against a live database |
 | 09 Free-text Red lines add flags | done | 130 tests. Added flags use the personal-reach severity rule; 120-character limit |
 | 06 Counter-offers and Non-negotiable clauses | done | 149 tests. Non-negotiable basis must be a verified quote; Copy button not clicked in a real browser |
+| 05 Confidence label behind a switch | done | 163 tests. Switch is UNDERLINE_SHOW_CONFIDENCE=true, off by default |
 
 ## Decisions made in your absence
 

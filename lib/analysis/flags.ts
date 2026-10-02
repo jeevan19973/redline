@@ -9,6 +9,7 @@ import type {
   BasisCitationFailure,
   CounterOfferGap,
   FlagCitationFailure,
+  Judged,
   ProposedFlag,
   ProposedRedLineFlag,
   RiskFlag,
@@ -20,6 +21,11 @@ import type {
 // catalog and the personal-reach test (ADR 0003), negotiability and the
 // Counter-offer (negotiability.ts), raising by the Signer's catalog Red lines
 // under the Severity floor, then ordering.
+//
+// Confidence (ADR 0004) is copied from the proposal onto the flag and never
+// read here. Whether a flag shows is decided by citation verification alone,
+// and the raising, Severity floor and ordering rules take Judged flags, which
+// have no Confidence field to read.
 
 export type VerifiedFlags = {
   riskFlags: RiskFlag[];
@@ -91,7 +97,7 @@ export async function verifyFlags(
 // the catalog and the personal-reach test or below where it started, only a
 // flag that started below Dangerous can say a Red line raised it, and a flag
 // a free-text Red line added comes back exactly as it went in.
-function assertSeverityFloor(before: readonly RiskFlag[], after: readonly RiskFlag[]): void {
+function assertSeverityFloor(before: readonly Judged<RiskFlag>[], after: readonly Judged<RiskFlag>[]): void {
   const rankOf = (severity: Severity) => (severity === "Dangerous" ? 1 : 0);
   if (after.length !== before.length) throw new Error("Severity floor: Red lines removed a Risk flag.");
   after.forEach((flag, index) => {
@@ -154,17 +160,19 @@ async function verifyOne(
     reachesSignerPersonally: proposed.reachesSignerPersonally,
     ...negotiability,
   };
-  const riskFlag: RiskFlag =
+  const judged: Judged<RiskFlag> =
     proposed.clauseType !== "redLine"
       ? { clauseType: proposed.clauseType, ...verified }
       : { clauseType: "redLine", ...verified, crossesRedLine: redLine! };
-  return { kind: "shown", riskFlag, ...notes };
+  // Attached only now that the flag is certain to show at the severity just
+  // decided, and carried along unread from here on.
+  return { kind: "shown", riskFlag: { ...judged, confidence: proposed.confidence }, ...notes };
 }
 
 // Dangerous first, then by the offset of the first Source sentence. The sort
 // is stable, so flags that start at the same place keep the model's order.
-function rank(flags: RiskFlag[]): RiskFlag[] {
-  const tier = (flag: RiskFlag) => (flag.severity === "Dangerous" ? 0 : 1);
+function rank<F extends Judged<RiskFlag>>(flags: F[]): F[] {
+  const tier = (flag: Judged<RiskFlag>) => (flag.severity === "Dangerous" ? 0 : 1);
   return flags.sort(
     (a, b) => tier(a) - tier(b) || a.sourceSentences[0].offset - b.sourceSentences[0].offset,
   );

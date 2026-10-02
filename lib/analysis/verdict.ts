@@ -1,7 +1,7 @@
 import { CATALOG, severityFor } from "./catalog.ts";
 import type { VerifiedGuaranty } from "./guaranty.ts";
 import { catalogRedLineFor, freeTextRedLineById, type RedLine } from "./red-lines.ts";
-import type { CleanVerdict, FlagCitationFailure, RiskFlag } from "./report.ts";
+import type { CleanVerdict, Judged, ProposedFlag, RiskFlag } from "./report.ts";
 import { CLEAN_VERDICT } from "./templates.ts";
 
 // The Clean verdict (ADR 0004): fixed template wording, never model output,
@@ -11,10 +11,15 @@ import { CLEAN_VERDICT } from "./templates.ts";
 // A flag crossing one of the Signer's Red lines rules it out, as a Dangerous
 // flag does: one a catalog Red line raised or is on, or one a free-text Red
 // line added.
+// It sees flags as Judged, without their Confidence, so a low-Confidence
+// Dangerous flag rules it out exactly as a high-Confidence one does.
+
+// What the Clean verdict may read of a flag withheld at citation verification.
+type WithheldFlag = { readonly flag: Judged<ProposedFlag> };
 
 export function cleanVerdictFor(
-  riskFlags: readonly RiskFlag[],
-  withheldFlags: readonly FlagCitationFailure[],
+  riskFlags: readonly Judged<RiskFlag>[],
+  withheldFlags: readonly WithheldFlag[],
   guaranty: VerifiedGuaranty,
   redLines: readonly RedLine[],
 ): CleanVerdict | undefined {
@@ -39,8 +44,8 @@ export function cleanVerdictFor(
 
 // When a Report gets a Clean verdict. Caution flags may sit alongside it.
 function qualifies(
-  riskFlags: readonly RiskFlag[],
-  withheldFlags: readonly FlagCitationFailure[],
+  riskFlags: readonly Judged<RiskFlag>[],
+  withheldFlags: readonly WithheldFlag[],
   redLines: readonly RedLine[],
 ): boolean {
   // No shown flag is Dangerous.
@@ -58,7 +63,7 @@ function qualifies(
   // reason as above: the model found the term, and only its quotation
   // failed. A flag naming a Red line that was not passed in never got this
   // far, since it rests on nothing the Signer set.
-  const crosses = (flag: RiskFlag) =>
+  const crosses = (flag: Judged<RiskFlag>) =>
     flag.clauseType === "redLine" || Boolean(flag.raisedByRedLine) || Boolean(catalogRedLineFor(flag.clauseType, redLines));
   if (riskFlags.some(crosses)) return false;
   const withheldCrosses = withheldFlags.some(({ flag }) =>

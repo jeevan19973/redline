@@ -1,5 +1,5 @@
 import { isClauseType, type ClauseType } from "./catalog.ts";
-import type { RiskFlag } from "./report.ts";
+import type { Judged, RiskFlag } from "./report.ts";
 
 // A Red line the Signer has set: either a catalog clause type they will not
 // accept, or a term in their own words. `id` is the Red line's own id, so a
@@ -46,11 +46,13 @@ export function catalogRedLineFor(
 // untouched, nothing here writes Caution, and every flag given comes back,
 // so no Red line, nor the lack of one, can hide or lower a Dangerous flag.
 // Free-text Red lines never raise anything, and a flag a free-text Red line
-// added is never raised either: it comes back untouched.
-export function raiseByRedLines(flags: readonly RiskFlag[], redLines: readonly RedLine[]): RiskFlag[] {
-  return flags.map((flag): RiskFlag => {
-    if (flag.clauseType === "redLine" || flag.severity === "Dangerous") return flag;
-    const redLine = catalogRedLineFor(flag.clauseType, redLines);
+// added is never raised either: it comes back untouched. It sees each flag as
+// Judged, without its Confidence, and passes the rest of the flag through.
+export function raiseByRedLines<F extends Judged<RiskFlag>>(flags: readonly F[], redLines: readonly RedLine[]): F[] {
+  return flags.map((flag): F => {
+    const judged: Judged<RiskFlag> = flag;
+    if (judged.clauseType === "redLine" || judged.severity === "Dangerous") return flag;
+    const redLine = catalogRedLineFor(judged.clauseType, redLines);
     if (!redLine) return flag;
     return {
       ...flag,
