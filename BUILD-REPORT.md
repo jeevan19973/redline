@@ -12,6 +12,7 @@ stops early. The final section lists what to run first.
 | Ticket | Status | Notes |
 |---|---|---|
 | 01 Sign in to an empty library | done | Built before this run (`b02c404`). Follow-up: the app now starts with no Supabase variables, and the anon key name is read first |
+| 02 Upload a plain-text file or paste text as a Draft | done | RLS checked in a rolled-back transaction; save flow not run in a browser (migration not applied). Body limit 2 MB; dates in UTC |
 
 ## Decisions made in your absence
 

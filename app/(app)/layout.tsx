@@ -29,6 +29,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <li>
             <RailLink href="/library">{copy.rail.library}</RailLink>
           </li>
+          <li>
+            <RailLink href="/drafts/new">{copy.rail.addDraft}</RailLink>
+          </li>
         </ul>
         <div className="rail__foot">
           {email && (

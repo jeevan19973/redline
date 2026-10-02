@@ -329,6 +329,133 @@ button, input { font: inherit; }
   text-transform: uppercase;
 }
 
+.pane__intro {
+  max-width: 60ch;
+  margin-top: 14px;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Secondary button: paper, ink border, no fill color of its own. */
+.button-secondary {
+  min-height: 36px;
+  padding: 0 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out);
+}
+.button-secondary:hover { background: var(--paper-shade); }
+
+/* ---------- Add a Draft ---------- */
+
+.draft-form {
+  display: grid;
+  gap: 24px;
+  max-width: 760px;
+  padding-top: 28px;
+}
+.draft-form__file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.draft-form__file input { font-size: 0.9375rem; max-width: 100%; }
+.draft-form__text {
+  width: 100%;
+  min-height: 320px;
+  padding: 14px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: 0;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+.draft-form__text:focus-visible { border-color: var(--ink); }
+.draft-form__text[readonly] { background: var(--paper-shade); }
+.draft-form .form-message { max-width: 60ch; }
+
+/* ---------- Library ---------- */
+
+.library { max-width: 760px; }
+.library__item { border-bottom: 1px solid var(--rule-paper); }
+.library__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 16px 4px;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease-out);
+}
+.library__link:hover { background: var(--paper-shade); }
+.library__link:hover .library__title { text-decoration-color: currentColor; }
+.library__title {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule-paper);
+}
+.library__date {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  font-feature-settings: "tnum" 1;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* ---------- One Draft ---------- */
+
+.draft__title { overflow-wrap: anywhere; }
+.draft__meta {
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  font-feature-settings: "tnum" 1;
+  color: var(--ink-soft);
+}
+.draft__text { display: grid; gap: 8px; padding-top: 28px; }
+.draft__section-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.draft__section-intro { color: var(--ink-soft); max-width: 60ch; }
+
+/* The stored text exactly as saved: every line break and space kept. */
+.document {
+  max-width: 72ch;
+  margin-top: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule-paper);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
 .empty {
   display: grid;
   gap: 8px;
