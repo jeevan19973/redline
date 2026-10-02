@@ -5,7 +5,7 @@ export const copy = {
   body: "This copy of Underline can't sign anyone in, so the library and Red lines aren't available.",
   analyze: {
     text: "Underline can still analyze a document's text if you paste it in.",
-    // Ticket 03 adds the link to the analyze page here, as `link`, and the
-    // notice renders it after `text`.
+    // Goes to /drafts/new, which offers the analysis without an account.
+    link: "Analyze a document",
   },
 } as const;

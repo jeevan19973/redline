@@ -5,15 +5,11 @@ import { unstable_rethrow } from "next/navigation";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { copy } from "../../copy";
 import { createDraft, type CreateDraftState } from "../actions";
+import { isPlainText } from "../plain-text";
 
 const text = copy.addDraft;
 
 type Draft = { title: string; text: string };
-
-// A file is accepted when it says it is plain text or is named .txt.
-function isPlainText(file: File) {
-  return file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt");
-}
 
 // What the form refuses before sending anything, or null when it can send.
 function refusalFor({ title, text: body }: Draft): string | null {

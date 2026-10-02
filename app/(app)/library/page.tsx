@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
+import { AccountsUnavailable } from "../../_accounts-unavailable/notice";
 import { copy } from "../copy";
 import { draftDate } from "../drafts/draft-date";
 
@@ -23,8 +24,8 @@ async function listDrafts(): Promise<DraftRow[]> {
 }
 
 export default async function LibraryPage() {
-  // The app layout shows the "accounts aren't set up" notice without Supabase.
-  if (!supabaseConfig()) return null;
+  // With no Supabase there are no accounts, so there is no library.
+  if (!supabaseConfig()) return <AccountsUnavailable />;
   const drafts = await listDrafts();
 
   return (

@@ -1,0 +1,157 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import type { StoredReport } from "@/lib/analysis/index.ts";
+import { fitsInOneSave } from "@/lib/draft-limits";
+import { copy } from "../../copy";
+import { analyzeWithoutAccount } from "../actions";
+import { isPlainText } from "../plain-text";
+import { ReportView } from "../report-view";
+
+const text = copy.analyze;
+
+// What the form refuses before sending anything, or null when it can send.
+function refusalFor(body: string): string | null {
+  if (!/\S/.test(body)) return text.errors.emptyText;
+  if (!fitsInOneSave("", body)) return text.errors.tooLarge;
+  return null;
+}
+
+// Paste or choose a .txt file and analyze it, with no account and nothing
+// stored. Only rendered when this copy of Underline has no Supabase. The
+// report is for the exact text in the box, so changing the text clears it.
+export function AnalyzeForm() {
+  const [pending, startTransition] = useTransition();
+  const [body, setBody] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [report, setReport] = useState<StoredReport | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const reportRegion = useRef<HTMLDivElement>(null);
+
+  // Move focus to a new report so a screen reader announces it.
+  useEffect(() => {
+    if (report) reportRegion.current?.focus();
+  }, [report]);
+
+  function changeText(next: string) {
+    setBody(next);
+    setReport(null);
+  }
+
+  async function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!isPlainText(file)) {
+      setMessage(text.errors.notText);
+      event.target.value = "";
+      return;
+    }
+    try {
+      // Read here, in the browser, exactly as the file holds it.
+      changeText(await file.text());
+      setFileName(file.name);
+      setMessage(null);
+    } catch {
+      setMessage(text.errors.readFailed);
+      event.target.value = "";
+    }
+  }
+
+  function removeFile() {
+    changeText("");
+    setFileName(null);
+    if (fileInput.current) fileInput.current.value = "";
+    fileInput.current?.focus();
+  }
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    // Send the text as a plain string rather than posting the form, which
+    // would rewrite the textarea's line breaks.
+    event.preventDefault();
+    const refused = refusalFor(body);
+    setMessage(refused);
+    if (refused) return;
+    setReport(null);
+    const sent = body;
+    startTransition(async () => {
+      try {
+        const result = await analyzeWithoutAccount(sent);
+        if ("report" in result) setReport(result.report);
+        else setMessage(result.error);
+      } catch {
+        setMessage(text.errors.failed);
+      }
+    });
+  }
+
+  return (
+    <>
+      <form className="draft-form" onSubmit={submit} noValidate>
+        <div className="field">
+          <label htmlFor="analyze-file">{text.file.label}</label>
+          <div className="draft-form__file">
+            <input
+              ref={fileInput}
+              id="analyze-file"
+              type="file"
+              accept=".txt,text/plain"
+              onChange={chooseFile}
+              disabled={pending}
+              aria-describedby="analyze-file-hint"
+            />
+            {fileName && (
+              <button className="button-secondary" type="button" onClick={removeFile} disabled={pending}>
+                {text.file.remove}
+              </button>
+            )}
+          </div>
+          <p className="field__hint" id="analyze-file-hint">
+            {text.file.hint}
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="analyze-text">{text.text.label}</label>
+          <p className="field__hint" id="analyze-text-hint">
+            {fileName ? text.text.fromFile(fileName) : text.text.pasteHint}
+          </p>
+          <textarea
+            id="analyze-text"
+            className="draft-form__text"
+            value={body}
+            readOnly={fileName !== null || pending}
+            onChange={(event) => changeText(event.target.value)}
+            aria-describedby="analyze-text-hint"
+            spellCheck={false}
+            rows={18}
+          />
+        </div>
+
+        {message && (
+          <p className="form-message" role="alert">
+            {message}
+          </p>
+        )}
+
+        <div className="analysis">
+          <div>
+            <button className="action" type="submit" disabled={pending}>
+              {pending ? text.pending : text.submit}
+            </button>
+          </div>
+          <p className="analysis__status" role="status">
+            {pending ? text.pendingNote : ""}
+          </p>
+        </div>
+      </form>
+
+      {report && (
+        <div className="analyze__result" ref={reportRegion} tabIndex={-1}>
+          <ReportView report={report} />
+          <p className="analyze__note">{text.notSaved}</p>
+        </div>
+      )}
+    </>
+  );
+}

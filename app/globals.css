@@ -456,6 +456,55 @@ button, input { font: inherit; }
   line-height: 1.6;
 }
 
+/* ---------- Report ---------- */
+
+.report { display: grid; gap: 24px; padding-top: 28px; max-width: 72ch; }
+.report__head { display: grid; gap: 12px; justify-items: start; }
+.report__head .draft__meta { margin-top: 0; }
+.report__part { display: grid; gap: 10px; }
+.report__part-title {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.report__summary { display: grid; gap: 12px; }
+.report__summary p { max-width: 68ch; }
+
+/* The scope stamp: a hairline stamp at the foot of the report (DESIGN.md). */
+.report__scope {
+  padding: 14px 16px 16px;
+  border: 1px solid var(--rule-paper);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* Analysis in progress, failed, or about to run again. */
+.analysis { display: grid; gap: 14px; justify-items: start; }
+.analysis .form-message { max-width: 60ch; }
+.analysis__status:empty { padding: 0; border: 0; }
+.analysis__status {
+  padding-left: 12px;
+  border-left: 2px solid var(--ink);
+  font-size: 1rem;
+}
+.analysis__rerun { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+
+/* ---------- Analyze without an account ---------- */
+
+.solo {
+  min-height: calc(100dvh - 69px);
+  padding: clamp(20px, 3vw, 40px);
+  background: var(--water-2);
+}
+.solo .pane { min-height: 0; margin-inline: auto; }
+.analyze__result { padding-top: 12px; outline: none; }
+.analyze__result:focus-visible { outline: 2px solid var(--ink); outline-offset: 8px; }
+.analyze__note { margin-top: 20px; font-size: 0.9375rem; color: var(--ink-soft); max-width: 60ch; }
+
 .empty {
   display: grid;
   gap: 8px;

@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { readStoredReport, type StoredReport } from "@/lib/analysis/index.ts";
 import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
+import { AccountsUnavailable } from "../../../_accounts-unavailable/notice";
 import { copy } from "../../copy";
 import { draftDate } from "../draft-date";
+import { isDraftId } from "../draft-id";
+import { ReportView } from "../report-view";
+import { AnalysisRunner } from "./analysis-runner";
 
 type Draft = { id: string; title: string; extracted_text: string; created_at: string };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// The Draft's stored Report: none yet, one that reads back cleanly, or a row
+// whose JSON is not a well-formed Report.
+type StoredState = { kind: "none" } | { kind: "report"; report: StoredReport } | { kind: "unreadable" };
 
 // One Draft by id, or null. The query does not filter by owner: row-level
 // security returns nothing for another Signer's Draft, which then reads as
 // not found.
 const getDraft = cache(async (id: string): Promise<Draft | null> => {
-  // The app layout shows the "accounts aren't set up" notice without Supabase.
-  if (!supabaseConfig() || !UUID.test(id)) return null;
+  if (!supabaseConfig() || !isDraftId(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("drafts")
@@ -26,6 +32,20 @@ const getDraft = cache(async (id: string): Promise<Draft | null> => {
   return data ?? null;
 });
 
+// The Draft's current Report. Row-level security limits it to the Draft's owner.
+async function getReport(draftId: string): Promise<StoredState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("reports")
+    .select("report")
+    .eq("draft_id", draftId)
+    .maybeSingle<{ report: unknown }>();
+  if (error) console.error("Could not load a Report", error.code, error.message);
+  if (!data) return { kind: "none" };
+  const report = readStoredReport(data.report);
+  return report ? { kind: "report", report } : { kind: "unreadable" };
+}
+
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -34,9 +54,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function DraftPage({ params }: Props) {
-  if (!supabaseConfig()) return null;
+  // With no Supabase there are no accounts, so there are no saved Drafts.
+  if (!supabaseConfig()) return <AccountsUnavailable />;
   const draft = await getDraft((await params).id);
   if (!draft) notFound();
+  const stored = await getReport(draft.id);
 
   return (
     <article className="pane" aria-labelledby="draft-title">
@@ -48,6 +70,23 @@ export default async function DraftPage({ params }: Props) {
           {copy.draft.added} <time dateTime={draft.created_at}>{draftDate(draft.created_at)}</time>
         </p>
       </header>
+
+      {stored.kind === "report" ? (
+        <ReportView
+          report={stored.report}
+          actions={<AnalysisRunner draftId={draft.id} mode="rerun" />}
+        />
+      ) : (
+        <section className="report" aria-labelledby="report-title">
+          <header className="report__head">
+            <h2 className="draft__section-title" id="report-title">
+              {copy.report.title}
+            </h2>
+          </header>
+          <AnalysisRunner draftId={draft.id} mode={stored.kind === "none" ? "first" : "unreadable"} />
+        </section>
+      )}
+
       <section className="draft__text" aria-labelledby="draft-text-title">
         <h2 className="draft__section-title" id="draft-text-title">
           {copy.draft.textTitle}

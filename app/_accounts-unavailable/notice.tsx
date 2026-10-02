@@ -21,6 +21,11 @@ export function AccountsUnavailable() {
           </h1>
           <p className="notice__body">{copy.body}</p>
           <p className="notice__body">{copy.analyze.text}</p>
+          <p>
+            <Link className="link" href="/drafts/new">
+              {copy.analyze.link}
+            </Link>
+          </p>
         </section>
       </main>
     </>

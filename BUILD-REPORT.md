@@ -13,6 +13,7 @@ stops early. The final section lists what to run first.
 |---|---|---|
 | 01 Sign in to an empty library | done | Built before this run (`b02c404`). Follow-up: the app now starts with no Supabase variables, and the anon key name is read first |
 | 02 Upload a plain-text file or paste text as a Draft | done | RLS checked in a rolled-back transaction; save flow not run in a browser (migration not applied). Body limit 2 MB; dates in UTC |
+| 03 First report: summary and scope stamp | done | 26 tests. reports RLS checked in a rolled-back transaction; Draft-page flow not run in a browser |
 
 ## Decisions made in your absence
 
@@ -44,3 +45,20 @@ stops early. The final section lists what to run first.
 8. **With no Supabase configured**, `/`, `/library`, `/sign-in` and `/sign-up`
    render a plain "Accounts aren't set up" notice (200, no redirect) and the
    proxy skips the session refresh. No fake user or session exists.
+9. **The no-account analyze path is a spend risk if deployed without
+   Supabase.** You asked for the app to analyze pasted text with no Supabase
+   variables. That path runs only when Supabase is unconfigured; with Supabase
+   set, analysis needs a signed-in Signer and the per-Signer limit applies. But
+   a public deploy that forgot the Supabase variables would let anyone run paid
+   model calls with no limit. Ticket 15's checklist already requires every
+   variable, so I left it as is. A one-line guard (refuse the no-account path
+   when `NODE_ENV=production` or on Vercel) is easy to add if you want it.
+10. **Analysis module shape (ticket 03).** `lib/analysis/` is the only way to
+    get a Report (the type is branded). Reports read back from the database are
+    a separate, validated `StoredReport`. Everything under `lib/analysis/` and
+    `lib/model/` uses relative `.ts` imports and erasable TypeScript, so
+    `npm run smoke` runs on plain Node 24 with no `tsx`. `tsconfig.json` gained
+    `allowImportingTsExtensions`. Model calls time out after 120 seconds. A
+    stored report that fails validation shows a "run again" button instead of
+    re-running by itself, since each run is a paid call.
+11. **vitest 5.0.3**, exact-pinned, is the only package added in ticket 03.
