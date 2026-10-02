@@ -23,6 +23,7 @@ stops early. The final section lists what to run first.
 | 10 Question box answered only from the document | done | 189 tests. One model call per question, no regeneration; 500-character limit |
 | 11 Delete a Draft | done | Delete and cascade checked in a rolled-back transaction; dialog checked in headless Chrome |
 | 12 PDF and DOCX upload, with scanned-file refusal | done | Real pdfjs/mammoth exercised in headless Chrome; signed-in form not run |
+| 17 Invite-only sign-up with single-use codes | done | Trigger checked in a rolled-back transaction; real sign-up not run. Every new account, even one made in Studio, needs a code |
 
 ## Decisions made in your absence
 
@@ -89,3 +90,11 @@ stops early. The final section lists what to run first.
     personal guarantee not checked, saying Underline couldn't rule out a
     separate guaranty. The banned-claims matcher rejects any "safe" and any
     "lawyer" or "attorney" in fixed copy, which is deliberately broad.
+14. **Invite codes (ticket 17).** A `BEFORE INSERT` trigger on `auth.users`
+    spends the code in the same transaction that creates the account, so a bad
+    code creates nothing and two racing sign-ups on one code make one account.
+    Side effect: every new `auth.users` row needs a code, including accounts
+    you create by hand in Studio or through the admin API (the README says
+    so). Accounts that already exist in your local database are untouched. The
+    owner script `npm run invite:create -- 5` needs `SUPABASE_SECRET_KEY` in
+    `.env.local`; the app itself never reads that key.

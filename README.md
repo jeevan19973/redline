@@ -58,6 +58,33 @@ Every Risk flag stores a Confidence that Signers do not see until you set `UNDER
 
 Stop Supabase with `npm run db:stop`.
 
+## Invite codes
+
+Sign-up is invite-only (ADR 0007): each account needs a single-use invite
+code, and signing in never asks for one. There is no admin screen. Create
+codes with:
+
+```sh
+npm run invite:create -- 5
+```
+
+It prints the new codes, one per line. It needs `NEXT_PUBLIC_SUPABASE_URL`
+and `SUPABASE_SECRET_KEY` in `.env.local` (`npx supabase status -o env` prints
+the key as `SECRET_KEY`). The secret key bypasses row-level security, so only
+owner scripts read it; the app never does, and it never gets a `NEXT_PUBLIC_`
+prefix.
+
+To see which codes are spent, run this in Studio's SQL editor:
+
+```sql
+select code, created_at, used_at, used_by from invite_codes order by created_at desc;
+```
+
+A code with `used_at` set is spent. `used_by` is the Signer's id in
+`auth.users`, or empty if that account was deleted. A user added by hand
+through Studio or the admin API also needs an unused code, as `invite_code`
+in its user metadata.
+
 ## Checks
 
 ```sh
