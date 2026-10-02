@@ -4,8 +4,13 @@ Unattended build run started 2026-10-01 on branch `v1-build`, cut from
 `env-example-openrouter` (which matched `main` plus the uncommitted
 `.env.example` change, committed first as `8e79ee2`).
 
-This file is updated as each ticket lands, so it is accurate even if the run
-stops early. The final section lists what to run first.
+**Result:** 15 of 18 tickets are done. The other three need you: 13 needs a
+qualified labeller, 15 needs your accounts, and 14 depends on 13. `npm run
+build` and `npm test` (345 tests) pass. `npm run smoke` ran once against the
+real model, and all 8 proposed flags survived citation verification (details
+below). The whole signed-in product was then run end to end on a throwaway
+Supabase stack, and all 11 checks passed. The last section lists what to run
+first.
 
 ## Tickets
 
@@ -15,17 +20,20 @@ stops early. The final section lists what to run first.
 | 02 Upload a plain-text file or paste text as a Draft | done | RLS checked in a rolled-back transaction; save flow not run in a browser (migration not applied). Body limit 2 MB; dates in UTC |
 | 03 First report: summary and scope stamp | done | 26 tests. reports RLS checked in a rolled-back transaction; Draft-page flow not run in a browser |
 | 04 Risk flags with verified Source sentences | done | 60 tests. Screen checked in headless Chrome via a temporary route. Clause labels want your read |
+| 05 Confidence label behind a switch | done | 163 tests. Switch is UNDERLINE_SHOW_CONFIDENCE=true, off by default |
+| 06 Counter-offers and Non-negotiable clauses | done | 149 tests. Non-negotiable basis must be a verified quote; Copy button not clicked in a real browser |
 | 07 Clean verdict and guaranty gap | done | 103 tests. No Clean verdict when a withheld flag would have been Dangerous |
 | 08 The Signer's Red lines raise severity, with the Severity floor | done | 119 tests. red_lines RLS checked in a rolled-back transaction; screen not run against a live database |
 | 09 Free-text Red lines add flags | done | 130 tests. Added flags use the personal-reach severity rule; 120-character limit |
-| 06 Counter-offers and Non-negotiable clauses | done | 149 tests. Non-negotiable basis must be a verified quote; Copy button not clicked in a real browser |
-| 05 Confidence label behind a switch | done | 163 tests. Switch is UNDERLINE_SHOW_CONFIDENCE=true, off by default |
 | 10 Question box answered only from the document | done | 189 tests. One model call per question, no regeneration; 500-character limit |
 | 11 Delete a Draft | done | Delete and cascade checked in a rolled-back transaction; dialog checked in headless Chrome |
 | 12 PDF and DOCX upload, with scanned-file refusal | done | Real pdfjs/mammoth exercised in headless Chrome; signed-in form not run |
+| 13 Labeled fixture set | ready-for-human | Not attempted: needs a labeller qualified to read a commercial lease |
+| 14 Fixture eval run | blocked | Blocked by 13 (needs a qualified labeller). Its other dependencies are done |
+| 15 Deploy to Vercel with a hosted Supabase | ready-for-human | Not attempted: needs your Vercel and Supabase accounts |
+| 16 Public landing page | done | 345 tests. Static at /. One exact-sentence exemption in the banned-claims test |
 | 17 Invite-only sign-up with single-use codes | done | Trigger checked in a rolled-back transaction; real sign-up not run. Every new account, even one made in Studio, needs a code |
 | 18 One-time limit per Signer | done | Limits checked in a rolled-back transaction; rail not seen on screen. Fails closed |
-| 16 Public landing page | done | 345 tests. Static at /. One exact-sentence exemption in the banned-claims test |
 
 ## Decisions made in your absence
 
@@ -136,3 +144,95 @@ fallbacks off.
     sentence, word for word, and tests prove that any edit to it, or a claim
     added beside it, still fails. `landing/` is left in place as the reference
     original; delete it when you're satisfied with the port.
+
+## End-to-end check on a throwaway Supabase stack
+
+The per-ticket notes above say "not run in a browser" because no migration was
+applied to any database. After the last ticket, one agent copied `supabase/`
+into a scratch folder as a separate project (`underline-e2e`, ports 553xx),
+applied every migration there, and drove a production build with headless
+Chrome. `OPENROUTER_API_KEY` was blanked, so no model call was made. Your
+`underline` stack was never targeted: same containers, still no tables.
+Afterwards the e2e stack was stopped and its volumes removed.
+
+All 11 checks passed, with no fixes needed:
+
+1. The landing page signed out, with sign-up and sign-in links.
+2. Invite codes: a wrong code creates no account; the right code creates one
+   and is spent; reusing it from a fresh session gives the used-code message.
+3. An empty library, and the rail showing 5 of 5 analyses and 25 of 25 questions.
+4. Pasted text with line breaks, tabs, curly quotes and section signs is stored
+   byte for byte (matching SHA-256). Analysis fails with a plain message and
+   Try again (no key), and the failure is not counted.
+5. `.txt` and text-PDF uploads are stored exactly as extracted.
+6. A Report built by the real `analyzeDraft` with the fake client renders
+   correctly: Dangerous first, underlined quotes, guaranty gap, take-it-or-leave-it
+   label, no Confidence, scope stamp.
+7. Catalog and free-text Red lines can be added, edited and removed, and they
+   persist.
+8. At the limit, upload and re-run are refused with nothing stored. Raising the
+   limit by SQL takes effect on the next request.
+9. Delete from the library and from the Draft page removes the report too; the
+   old link gives not-found.
+10. A second Signer sees nothing of the first and gets not-found on their URL.
+11. After sign out, the library redirects to sign-in.
+
+Two small observations: after a Red line edit, the other editor keeps its last
+status line (cosmetic), and the question box appears only once a Draft has a
+report.
+
+## What I could not verify
+
+- **The hosted Supabase project.** It doesn't exist yet. Every migration was
+  checked on local Postgres (rolled-back transactions, plus the throwaway
+  stack), not on a hosted project. Hosted Auth settings such as email
+  confirmation and redirect URLs are ticket 15's job.
+- **A successful analysis or question inside the running app.** The end-to-end
+  run kept the key blank to avoid spend. The real model was exercised only
+  through `npm run smoke`, which runs the same `analyzeDraft` the app calls,
+  without the browser or the database. A real question (`askDraft`) has not
+  been asked of the real model at all.
+- **Counter-offers from the real model.** The only real run was on a
+  take-it-or-leave-it lease, so every flag was correctly Non-negotiable.
+- **Two truly simultaneous sign-ups on one code.** That rests on the row lock
+  inside the trigger, and was checked only one transaction at a time.
+- **True phone width below about 500px.** Headless Chrome won't lay out that
+  narrow; agents checked 390px through an iframe.
+- **Contrast and screen-reader audits.** None were run formally; the landing
+  page relies on its earlier finish review.
+- **Confidence calibration and every measured eval target.** These wait on
+  tickets 13 and 14.
+
+## Run these first
+
+```sh
+cd aipmcohort4-redline
+git fetch && git switch v1-build
+npm install                      # adds vitest, pdfjs-dist, mammoth
+npm run typecheck && npm test && npm run build
+```
+
+To use it locally with accounts (Docker running):
+
+```sh
+npm run db:start
+npx supabase db reset            # applies the five migrations in supabase/migrations/ to your LOCAL database
+# add SUPABASE_SECRET_KEY to .env.local (npx supabase status -o env prints it as SECRET_KEY)
+npm run invite:create -- 1       # prints one invite code
+npm run dev                      # http://localhost:3000, then sign up with that code
+```
+
+`db reset` wipes your local database, including the one test account from
+ticket 01. If you would rather apply the migrations by hand, as you planned,
+run the five files in `supabase/migrations/` in filename order.
+
+To see the model on the fixture lease again (one paid run):
+
+```sh
+npm run smoke
+```
+
+Then read, in this order: decision 9 (the no-account spend risk), decision 12
+(clause labels for your review), the real-model smoke notes on the extra
+personal-guarantee flag, and decision 14 (every new account needs an invite
+code).
