@@ -3,7 +3,6 @@ import { supabaseConfig } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsUnavailable } from "../../_accounts-unavailable/notice";
 import { copy } from "../copy";
-import { draftDate } from "../drafts/draft-date";
 import { LibraryList, type LibraryDraft } from "./library-list";
 
 export const metadata: Metadata = { title: copy.library.title };
@@ -24,8 +23,6 @@ async function listDrafts(): Promise<LibraryDraft[]> {
     id: row.id,
     title: row.title,
     createdAt: row.created_at,
-    // Formatted here so the server and the browser show the same date.
-    date: draftDate(row.created_at),
   }));
 }
 

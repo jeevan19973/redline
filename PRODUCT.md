@@ -24,7 +24,7 @@ v1 is an invite-only beta. Signers reach it with a single-use invite code from t
 
 ## Product Purpose
 
-Underline reads a contract before someone signs it and tells them what it says and what it costs them, while they can still negotiate. It exists to catch the clause whose exposure reaches past the business to the Signer personally: a personal guarantee, an assignment of work they owned before the deal, an uncapped indemnity signed as an individual, a non-compete that binds them rather than the business.
+Underline reads a contract before someone signs it and tells them what it says and what it costs them, while they can still negotiate. It exists to catch the clause whose exposure reaches past the business to the Signer personally: a personal guarantee or a pledge of their own property, an assignment of work they owned before the deal, an uncapped indemnity signed as an individual, a non-compete that binds them rather than the business.
 
 v1 exists to prove the analysis can be trusted. Success is measured on a labeled fixture set: every displayed Source sentence is present verbatim in the document, no Dangerous clause is missed, and clean documents come back clean (PRD section 4).
 

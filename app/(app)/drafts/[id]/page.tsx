@@ -9,7 +9,7 @@ import { copy as notFoundCopy } from "../../../_not-found/copy";
 import { copy } from "../../copy";
 import { askAboutDraft } from "../actions";
 import { DeleteDraft } from "../delete-draft";
-import { draftDate } from "../draft-date";
+import { DraftDate } from "../draft-date-view";
 import { isDraftId } from "../draft-id";
 import { DraftReading } from "../draft-reading";
 import { readReport } from "../report-store";
@@ -72,7 +72,7 @@ export default async function DraftPage({ params }: Props) {
         </h1>
         <div className="draft__bar">
           <p className="draft__meta">
-            {copy.draft.added} <time dateTime={draft.created_at}>{draftDate(draft.created_at)}</time>
+            {copy.draft.added} <DraftDate dateTime={draft.created_at} />
           </p>
           <DeleteDraft draftId={draft.id} title={draft.title} from="draft" describedBy="draft-title" />
         </div>

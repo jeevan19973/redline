@@ -10,7 +10,7 @@ import {
 } from "@/lib/analysis/index.ts";
 import { copy } from "../copy";
 import { CopyButton } from "./copy-button";
-import { draftDate } from "./draft-date";
+import { DraftDate } from "./draft-date-view";
 
 const text = copy.report;
 
@@ -60,7 +60,7 @@ export function ReportView({
           {text.title}
         </h2>
         <p className="draft__meta">
-          {text.analyzed} <time dateTime={report.createdAt}>{draftDate(report.createdAt)}</time>
+          {text.analyzed} <DraftDate dateTime={report.createdAt} />
         </p>
         {/* Its own element, so a control passed in from a Server Component
             is a single child rather than an unkeyed list item. */}
