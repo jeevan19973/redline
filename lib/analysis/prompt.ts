@@ -198,10 +198,10 @@ ${CATALOG_LINES}
 
 One flag per clause. If one clause is of two catalog types, give it a flag for each. If a flag rests on several sentences together (for example an indemnity and the guarantee that makes it personal), quote each of them in that flag.
 
-reachesSignerPersonally: set it true when the clause's exposure reaches past the business entity to the Signer as an individual, or to property or work they owned before the deal. For example: an individual principal, owner or officer who guarantees, indemnifies, assigns or is restricted in their own capacity; or an uncapped indemnity in a document where an individual also guarantees the business. Set it false when only the business is exposed. How unusual a clause is does not matter; only whose assets or freedom it reaches.
+reachesSignerPersonally: set it true when the clause's exposure reaches past the business entity to the Signer as an individual, or to property or work they owned before the deal. For example: an individual principal, owner or officer who guarantees, pledges their own property as security, indemnifies, assigns or is restricted in their own capacity; or an uncapped indemnity in a document where an individual also guarantees the business. Set it false when only the business is exposed. How unusual a clause is does not matter; only whose assets or freedom it reaches.
 
 Error bias:
-- Where a clause could reach the Signer personally (a guarantee, an assignment of prior work, an indemnity that reaches an individual, a restriction on an individual), flag it, even when you are unsure. A false alarm is far better than a miss.
+- Where a clause could reach the Signer personally (a guarantee, a pledge of an individual's own property, an assignment of prior work, an indemnity that reaches an individual, a restriction on an individual), flag it, even when you are unsure. A false alarm is far better than a miss.
 - For everything else, flag a clause only when it clearly is one of the catalog types. When in doubt, leave it out.
 - If the document has no catalog clause, return an empty riskFlags list. Do not invent flags to look useful.
 

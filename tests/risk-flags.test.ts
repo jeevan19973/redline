@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyzeDraft, readStoredReport } from "../lib/analysis/index.ts";
+import { analysisRequest } from "../lib/analysis/prompt.ts";
 import { fakeModelClient } from "./support/fake-model-client.ts";
 import {
   analysisPayload,
@@ -317,5 +318,23 @@ describe("readStoredReport: Risk flags", () => {
     const stored = readStoredReport(older, { showConfidence: true });
     expect(stored).not.toBeNull();
     expect(stored?.riskFlags).toBeUndefined();
+  });
+});
+
+// FINDINGS.md, seen once: "Principal grants Landlord a security interest in
+// all of Principal's personal property" went unflagged, because no catalog
+// type covered an individual pledging their own property. Whether the model
+// then flags it needs the live model; this checks it is asked to.
+describe("analysisRequest: an individual's pledge of their own property", () => {
+  const { system } = analysisRequest(lease.text, []);
+
+  it("is a personal guarantee in the catalog the model reads", () => {
+    const line = system.split("\n").find((text) => text.startsWith("- personalGuarantee "));
+    expect(line).toMatch(/security interest/);
+  });
+
+  it("reaches the Signer personally", () => {
+    const rule = system.split("\n").find((text) => text.startsWith("reachesSignerPersonally:"));
+    expect(rule).toMatch(/pledges/);
   });
 });

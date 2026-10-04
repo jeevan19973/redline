@@ -23,11 +23,11 @@ export const CLEAN_VERDICT = Object.freeze({
   // Personal guarantee is not checked, and the guaranty gap above quotes the
   // sentence that refers to the separate guaranty.
   guarantyGapNote:
-    "Personal guarantee is marked not checked because this text refers to a separate guaranty, quoted above, that wasn't added here.",
+    "Personal guarantee or pledge is marked not checked because this text refers to a separate guaranty, quoted above, that wasn't added here.",
   // Personal guarantee is not checked, but the sentence the model quoted for
   // the separate guaranty failed verification, so nothing is quoted.
   guarantyUnverifiedNote:
-    "Personal guarantee is marked not checked because Underline couldn't rule out a separate guaranty, and it read only this text.",
+    "Personal guarantee or pledge is marked not checked because Underline couldn't rule out a separate guaranty, and it read only this text.",
 });
 
 // The guaranty gap (ADR 0003), shown with the sentence that refers to the

@@ -22,10 +22,10 @@ type CatalogEntryShape = {
 export const CATALOG = [
   {
     clauseType: "personalGuarantee",
-    label: "Personal guarantee",
+    label: "Personal guarantee or pledge",
     defaultSeverity: "Dangerous",
     covers:
-      "An individual (the Signer, an owner, principal or officer) personally guarantees the business's payment or performance, so their own assets back the business's obligations.",
+      "An individual (the Signer, an owner, principal or officer) personally guarantees the business's payment or performance, or gives the Counterparty a security interest, lien or mortgage on their own property (a home, vehicle, bank or investment account) to secure the business's obligations, so their own assets back the business's obligations.",
   },
   {
     clauseType: "preExistingIpAssignment",

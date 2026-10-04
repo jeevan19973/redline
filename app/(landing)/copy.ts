@@ -171,7 +171,7 @@ export const copy = {
     personal: {
       head: "Reaches you personally",
       items: [
-        "Personal guarantees",
+        "Personal guarantees and pledges of your property",
         "Handing over work you owned before the deal",
         "Uncapped indemnity you sign personally",
         "Non-competes that bind you, not just the business",
@@ -192,7 +192,7 @@ export const copy = {
       text: "No clause in this document reaches past the business to you, and none crosses your red lines.",
       checkedFor: "Checked for",
       items: [
-        "Personal guarantees",
+        "Personal guarantees and pledges",
         "Work you owned before the deal",
         "Uncapped indemnity signed personally",
         "Non-competes that bind you",
