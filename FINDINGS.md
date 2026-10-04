@@ -12,7 +12,7 @@ three Red lines I added, so the list is empty again, as I found it.
 
 ## Findings
 
-### 1. Arbitration and jury-waiver clauses are marked Dangerous when no Red line asks for it
+### 1. Arbitration and jury-waiver clauses are marked Dangerous when no Red line asks for it (Resolved)
 
 Steps:
 
@@ -51,6 +51,18 @@ individual owner is named in the clause.
 
 Severity: misleads a reader. The report tells the reader their personal assets
 are exposed by a clause that, by the product's own rule, only takes a right.
+
+**Resolved: the PRD was wrong, not the product.** ADR 0003 says arbitration
+and class-action waivers are not Dangerous "unless they also reach past the
+business". When an owner or principal waives a jury trial in their own
+capacity, the clause does reach past the business, so Dangerous is right
+under the ADR, and the report legend's reason is true. The app's Red lines
+page already says a Caution clause becomes Dangerous when it reaches you
+personally. PRD.md said arbitration is always Caution. It now matches the
+ADR, and a test in tests/risk-flags.test.ts pins the rule for arbitration.
+The second point, the jury-waiver-only clause labeled "Arbitration and
+class-action waiver", is also correct: that clause type covers jury-trial
+waivers. No code changed.
 
 ### 2. Library and report dates are a day ahead for a US evening user
 
