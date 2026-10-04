@@ -64,7 +64,7 @@ The second point, the jury-waiver-only clause labeled "Arbitration and
 class-action waiver", is also correct: that clause type covers jury-trial
 waivers. No code changed.
 
-### 2. Library and report dates are a day ahead for a US evening user
+### 2. Library and report dates are a day ahead for a US evening user (Resolved)
 
 Steps:
 
@@ -84,6 +84,10 @@ Eastern on Oct 2 shows "Oct 3, 2026" in the library, on "Added", and on
 
 Severity: cosmetic.
 
+**Resolved.** Dates in the library, on "Added" and on "Analyzed" are now
+shown in the reader's own time zone, which the browser supplies. The server
+still renders the UTC date, and the browser replaces it as the page loads.
+
 ## Seen once
 
 These happened once and I could not repeat them within the budget.
@@ -97,6 +101,9 @@ These happened once and I could not repeat them within the budget.
   with no parties or agreement. PRD.md section 1 says the document is one of
   four kinds. Repeating this would have cost another analysis. If it repeats,
   it misleads a reader in a small way and costs them one of five analyses.
+  **Accepted, no change.** This is a free beta, and the Signer chose to save
+  the text, which runs the analysis. The summary says plainly what the text
+  is.
 - **A personal security interest goes unflagged.** In the existing "California
   Bakery" report, section 17.6 ("Principal grants Landlord a security interest
   in all of Principal's personal property, including vehicles, deposit accounts
@@ -105,6 +112,12 @@ These happened once and I could not repeat them within the budget.
   business to the Signer personally". In my own lease, a similar clause (4.2)
   was quoted inside the Personal guarantee flag, so I could not make the miss
   happen again. If it repeats, it misleads a reader.
+  **Resolved.** No clause type covered an individual pledging their own
+  property. "Personal guarantee" is now "Personal guarantee or pledge" and
+  covers a security interest, lien or mortgage an individual gives on their
+  own property. The personal-reach rule names pledges too. Check on the
+  preview by re-running "California Bakery": 17.6 should be quoted in a
+  Dangerous flag.
 - **"Payment terms against you" is applied to rent the Signer pays.** In the
   "California Bakery" report, this flag quotes the rent-payment clauses. PRD.md
   section 5 defines the type as "Long payment windows, or pay-when-paid terms,
