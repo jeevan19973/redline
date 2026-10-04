@@ -217,6 +217,15 @@ describe("analyzeDraft: severity", () => {
     expect(await severityOf(modelFlag(lateFee, { reachesSignerPersonally: true }))).toBe("Dangerous");
   });
 
+  // ADR 0003: arbitration is not Dangerous unless it also reaches past the
+  // business, as when an individual principal waives a jury trial in their
+  // own capacity.
+  it("makes an arbitration clause Caution when it binds only the business and Dangerous when personal", async () => {
+    const arbitration = plantedClause(lease, "arbitration-with-class-waiver");
+    expect(await severityOf(modelFlag(arbitration, { reachesSignerPersonally: false }))).toBe("Caution");
+    expect(await severityOf(modelFlag(arbitration, { reachesSignerPersonally: true }))).toBe("Dangerous");
+  });
+
   it("ignores a severity the model writes in itself", async () => {
     const flag = { ...modelFlag(lateFee), severity: "Dangerous" };
     expect(await severityOf(flag)).toBe("Caution");
