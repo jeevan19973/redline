@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { copy } from "../copy";
 import { DeleteDraft } from "../drafts/delete-draft";
+import { DraftDate } from "../drafts/draft-date-view";
 
-export type LibraryDraft = { id: string; title: string; createdAt: string; date: string };
+export type LibraryDraft = { id: string; title: string; createdAt: string };
 
 // The Signer's Drafts, newest first, each with a way to open it and to
 // delete it. After a deletion here the row is gone, so focus moves to the
@@ -60,9 +61,7 @@ export function LibraryList({
                   <span className="library__title" id={titleId}>
                     {draft.title}
                   </span>
-                  <time className="library__date" dateTime={draft.createdAt}>
-                    {draft.date}
-                  </time>
+                  <DraftDate className="library__date" dateTime={draft.createdAt} />
                 </Link>
                 <DeleteDraft
                   draftId={draft.id}
