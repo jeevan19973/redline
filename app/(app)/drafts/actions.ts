@@ -25,7 +25,9 @@ import { listRedLines } from "../red-lines/store";
 import { isDraftId } from "./draft-id";
 import { claimAnalysis, clearAnalysisClaim, readReport, reportStorageReady, saveReport } from "./report-store";
 
-export type CreateDraftState = { error?: string };
+// `analysisLimit` is set when the Signer is at their analysis limit, for the
+// limit toast.
+export type CreateDraftState = { error?: string; analysisLimit?: number };
 
 // Stores a new Draft for the signed-in Signer and opens it. Takes the title
 // and text as plain string arguments, not form data: a native form post
@@ -36,7 +38,7 @@ export type CreateDraftState = { error?: string };
 // The Draft's page then runs the analysis with runAnalysis, so the Signer
 // sees it in progress there, against their Red lines as they stand then.
 // Saving a Draft always leads to an analysis, so at the analysis limit
-// (ADR 0007) nothing is stored: the Signer gets the plain refusal instead.
+// (ADR 0007) nothing is stored: the Signer gets the limit toast instead.
 export async function createDraft(title: unknown, text: unknown): Promise<CreateDraftState> {
   // With no Supabase there is no account to save to; the page says so.
   if (!supabaseConfig()) redirect("/drafts/new");
@@ -55,7 +57,7 @@ export async function createDraft(title: unknown, text: unknown): Promise<Create
 
   const allowance = await readAllowance(supabase);
   if (!allowance) return { error: copy.addDraft.errors.unexpected };
-  if (allowance.analysesLeft === 0) return { error: copy.limit.analysisReached(allowance.analysisLimit) };
+  if (allowance.analysesLeft === 0) return { analysisLimit: allowance.analysisLimit };
 
   // The owner defaults to auth.uid(), and row-level security refuses any
   // other owner.
@@ -106,12 +108,15 @@ export async function deleteDraft(draftId: unknown, then: unknown): Promise<Dele
   return { ok: true };
 }
 
-// `refusal` is a plain message for a run that was refused (the analysis
-// limit, or reports that can't be stored), so the page shows it instead of
-// offering to try again. `analyzing` means another run on this Draft is in
-// progress, from another tab say, so this one made no model call and the
+// `refusal` is a plain message for a run that was refused because reports
+// can't be stored, so the page shows it instead of offering to try again.
+// `analysisLimit` is set when the run was refused at the Signer's analysis
+// limit, for the limit toast. `analyzing` means another run on this Draft is
+// in progress, from another tab say, so this one made no model call and the
 // page waits for that run instead.
-export type RunAnalysisResult = { ok: true } | { ok: false; refusal?: string; analyzing?: true };
+export type RunAnalysisResult =
+  | { ok: true }
+  | { ok: false; refusal?: string; analysisLimit?: number; analyzing?: true };
 
 // "first" is the automatic analysis of a Draft with no report yet; "rerun"
 // is the Signer's explicit "Run analysis again".
@@ -204,9 +209,7 @@ async function analyzeClaimed(
 
   const allowance = await readAllowance(supabase);
   if (!allowance) return { ok: false };
-  if (allowance.analysesLeft === 0) {
-    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
-  }
+  if (allowance.analysesLeft === 0) return { ok: false, analysisLimit: allowance.analysisLimit };
 
   // An analysis never runs as if the Signer had no Red lines when the list
   // could not be read.
@@ -215,9 +218,7 @@ async function analyzeClaimed(
 
   // The early check above gives the limit for the message; this is the guard.
   const reserved = await reserveUse(owner, "analysis");
-  if (reserved === "limit") {
-    return { ok: false, refusal: copy.limit.analysisReached(allowance.analysisLimit) };
-  }
+  if (reserved === "limit") return { ok: false, analysisLimit: allowance.analysisLimit };
   if (reserved === "error") return { ok: false };
 
   let report: Report;
