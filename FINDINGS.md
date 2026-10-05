@@ -10,6 +10,14 @@ still in the library as evidence ("QA injection lease", "QA long lease", "QA
 contrato español"). I deleted "QA few words" to test Delete. I removed the
 three Red lines I added, so the list is empty again, as I found it.
 
+A second pass ran on 2026-10-04, on production after PRs #4 and #5, to test
+what the first pass left untested. The analysis limit had been raised to 20.
+It used 7 analyses (12 of 20 used after it, plus two failed runs that were
+not charged) and 5 questions (14 of 25 left). Its Drafts are still in the library:
+"QA severity floor", the HTML-looking title, the long "QA long title AAAA..."
+and "california-commercial-lease.docx". The arbitration Red line it added was
+removed again.
+
 ## Findings
 
 ### 1. Arbitration and jury-waiver clauses are marked Dangerous when no Red line asks for it (Resolved)
@@ -88,11 +96,141 @@ Severity: cosmetic.
 shown in the reader's own time zone, which the browser supplies. The server
 still renders the UTC date, and the browser replaces it as the page loads.
 
+### 3. Caution clauses are marked Dangerous when the text doesn't say who the Tenant is (Resolved, no change)
+
+Steps:
+
+1. Make sure you have no Red lines.
+2. Add a Draft by pasting a lease that names no parties, for example: "Tenant
+   shall pay a late charge of 10 percent of any rent not paid within five days
+   of its due date. This Lease renews automatically for successive one-year
+   terms unless Tenant gives notice at least 180 days before the end of the
+   term."
+3. Wait for the report.
+
+PRD.md and ADR 0003 promise that late fees and automatic renewal are Caution
+unless the clause reaches past the business to the Signer personally. The
+report's own legend says "Caution means the cost stays with the business."
+
+What happened: both times, every flag was DANGEROUS, with no Red line raising
+it.
+
+- The HTML-looking title Draft (late fee only): "Late fees and penalties",
+  DANGEROUS.
+- "QA long title AAAA..." (late fee and renewal): "Late fees and penalties"
+  and "Automatic renewal", both DANGEROUS.
+
+The stored reports show the model set reachesSignerPersonally to true for each
+flag, so the code made them Dangerous. Nothing in the text says the Tenant is
+an individual. When the parties were named as companies ("QA severity floor",
+"Northwind Bakery LLC"), the same kind of clause stayed Caution, and in the
+California lease the late fee was Caution too. The Readings also address the
+reader as the Tenant ("If you do not pay the rent...").
+
+Severity: misleads a reader. A short excerpt, or a lease where the Tenant is
+not named, shows every cost clause as reaching the reader personally.
+
+Open question for the owner: when the Signer is an individual Tenant, such as
+a sole proprietor, every clause arguably reaches them personally. The fix
+depends on whether an unnamed or individual Tenant should count.
+
+**Resolved, no change (owner, Oct 4).** The current approach stands: when the
+text doesn't show that only a business is bound, the model may treat the
+Tenant as an individual, and a clause that binds an individual reaches the
+Signer personally. This fits the error bias in ADR 0004, which prefers a false
+alarm to a missed Dangerous clause.
+
+### 4. "Payment terms against you" is applied to payments the Signer makes
+
+Steps:
+
+1. Add the California lease (samples/california-commercial-lease.docx) as a
+   Draft, by file or by pasting its text.
+2. Find the "Payment terms against you" flag.
+
+PRD.md promises (section 5, Caution table, "Payment terms against the
+Signer"): "Long payment windows, or pay-when-paid terms, when the Signer is the
+one being paid."
+
+What happened: both times, the flag quoted payments the Signer makes, not
+payments made to the Signer.
+
+- "California Bakery" (first pass): the flag quotes the rent-payment clauses.
+- "california-commercial-lease.docx" (second pass): the flag quotes 5.4, the
+  monthly estimate of Operating Expenses the Tenant pays and the year-end
+  shortfall.
+
+Severity: misleads a reader in a small way. The flag is Caution, but it names
+a risk the PRD defines for the opposite side of the payment.
+
+**Under review, no change yet (owner, Oct 4).** The owner's view is that the
+risk runs both ways: terms that favor the payer when the Signer is paid, and
+serious constraints on the Signer when the Signer pays. The catalog already
+covers both directions; the PRD covers only the first. Read that way, both
+quoted clauses may be fair flags (5.4 lets the Landlord revise its estimate at
+any time; the Bakery rent clause bars deduction and offset). The plan is to
+align the PRD with the two-way definition and to tell the model that an
+ordinary duty to pay on a schedule is not a flag by itself. See the plan in
+the PR for this branch.
+
+### 5. At 0 analyses left, the buttons stay enabled and the message offers no way to get more
+
+Steps:
+
+1. Use up your analyses, so the rail says "0 of 5 analyses left".
+2. Add a Draft and click Save Draft. Or open a Draft and click "Run analysis
+   again".
+
+PRD.md promises (via ADR 0007) a one-time limit per Signer. It makes no
+promise about how the limit is shown.
+
+What happened: both buttons stay enabled. Clicking either shows an inline box:
+"You've reached your limit of 5 analyses, so Underline can't run another. Your
+Drafts and reports are still here. The person who invited you can raise your
+limit." Nothing was stored or charged, and the existing report stayed. The
+message doesn't say how to reach the person who invited you.
+
+Severity: cosmetic, but a dead end for a reader who wants more analyses.
+
+Decision (owner, Oct 4): when a Signer at the limit clicks either button, show
+a toast that says their analyses are used up and that they can email Jeevan
+Surya at jeevansuryamaddu@gmail.com for more. Paying for more comes later.
+
+**Resolved.** At the limit, Save Draft and "Run analysis again" now show a
+toast: "You've used all 5 analyses. To get more, email Jeevan Surya at
+jeevansuryamaddu@gmail.com. Your Drafts and reports are still here." It stays
+until closed (Close or Escape) and replaces the inline message. The question
+limit message is unchanged.
+
+### 6. An analysis fails when the model returns a flag with no Reading or more than two
+
+Steps:
+
+1. Open "california-commercial-lease.docx" in the library.
+2. Click "Run analysis again" several times, waiting for each to finish.
+
+PRD.md promises (section 4) that the analysis can be trusted, and the app
+promises a report for every saved Draft.
+
+What happened: 2 of 5 runs on Oct 4 showed "Underline couldn't finish
+analyzing this Draft." Both logs say "The model's output was malformed:
+riskFlags[N].readings must hold one or two Readings" (once flag 7, once flag
+0). Neither was charged, and the next run worked. The other 3 runs gave 9, 10
+and 11 flags.
+
+Cause: the JSON schema sent to the model (lib/analysis/prompt.ts, `readings`)
+asks for one or two Readings only in its description, with no `minItems` or
+`maxItems`. The parser (lib/analysis/parse.ts) requires one or two and rejects
+the whole analysis when one flag breaks the rule.
+
+Severity: a failed run. Nothing wrong is shown and nothing is charged, but a
+long lease fails often enough that a Signer will see it.
+
 ## Seen once
 
 These happened once and I could not repeat them within the budget.
 
-- **A shopping list gets a Clean verdict and uses up an analysis.** I pasted
+- **A shopping list gets a Clean verdict and uses up an analysis. (Resolved)** I pasted
   "Remember to buy milk, eggs and bread." as a Draft. Saving started an
   analysis right away, with no warning, and used one of the five one-time
   analyses. The report said "No Dangerous clause found in this text ...
@@ -101,10 +239,10 @@ These happened once and I could not repeat them within the budget.
   with no parties or agreement. PRD.md section 1 says the document is one of
   four kinds. Repeating this would have cost another analysis. If it repeats,
   it misleads a reader in a small way and costs them one of five analyses.
-  **Accepted, no change.** This is a free beta, and the Signer chose to save
+  **Resolved, no change needed.** This is a free beta, and the Signer chose to save
   the text, which runs the analysis. The summary says plainly what the text
   is.
-- **A personal security interest goes unflagged.** In the existing "California
+- **A personal security interest goes unflagged. (Resolved)** In the existing "California
   Bakery" report, section 17.6 ("Principal grants Landlord a security interest
   in all of Principal's personal property, including vehicles, deposit accounts
   and investment accounts...") is not quoted in any flag. It meets the
@@ -118,31 +256,59 @@ These happened once and I could not repeat them within the budget.
   own property. The personal-reach rule names pledges too. Check on the
   preview by re-running "California Bakery": 17.6 should be quoted in a
   Dangerous flag.
-- **"Payment terms against you" is applied to rent the Signer pays.** In the
-  "California Bakery" report, this flag quotes the rent-payment clauses. PRD.md
-  section 5 defines the type as "Long payment windows, or pay-when-paid terms,
-  when the Signer is the one being paid." Seen in that one report only.
+- **"Payment terms against you" is applied to rent the Signer pays.** This
+  repeated on the second pass, so it is now finding 4.
 - **A question failed once.** On "QA long lease" (118,620 characters), the first
   attempt at "How much am I personally on the hook for under the guaranty, and
   is there a cap?" showed "Underline couldn't finish answering. Try again." It
-  was not charged. The retry worked.
+  was not charged. The retry worked. On the second pass the same question got
+  "This document doesn't say." (the guaranty is a separate document), and a
+  rent question was answered with quotes, so it did not repeat. Vercel no
+  longer holds the log from Oct 3, so the reason is unknown. Asked 3 more times
+  on Oct 4, it was answered each time in 6 to 10 seconds and charged once each.
+  **Not reproduced** in 5 tries since. It may have been the same kind of
+  malformed reply as finding 6.
+- **An analysis failed on malformed model output.** This repeated, so it is now
+  finding 6. The first analysis of
+  "california-commercial-lease.docx" showed "Underline couldn't finish
+  analyzing this Draft." The log says "The model's output was malformed:
+  riskFlags[7].readings must hold one or two Readings". It was not charged, and
+  Try again worked. This is likely the same kind of failure as the question
+  above: one bad model reply ends the whole run.
 
-## Not tested, and why
+## Tested on the second pass
 
-- **What happens at 0 analyses left.** "Save Draft" and "Run analysis again"
-  stay enabled and give no hint that the limit is used up. Clicking either
-  could start a fifth analysis if the limit failed, and you allowed four.
-- **Long or HTML-looking Draft titles.** Every save starts an analysis, so each
-  title test would have cost one.
-- **The Severity floor** (PRD.md section 4, "With a Red line removed for a
-  clause type, a Dangerous flag of that type still shows"). This needs a re-run.
-- **File upload, signed-out pages, and sign-up.** You asked for pasted text, no
-  sign-out, and no sign-up.
-- **The message after a refresh mid-analysis.** It said the Draft was being
-  analyzed "in another tab or window". Another browser instance was open at
-  the time, so the message may have been right. Test again with one browser.
-- **True phone width.** This browser window would not resize (it reports a 0x0
-  outer size), so I checked 375px through a same-site frame, as the build did.
+- **What happens at 0 analyses left.** See finding 5. The limit held: nothing
+  was stored or charged.
+- **Long Draft titles.** There is no length limit. A 344-character title saved
+  and analyzed. It wraps on the Draft page (seven lines of heading) and in the
+  library, which pushes the date below it. No horizontal scroll at 375px.
+- **HTML-looking Draft titles.** The title
+  `<img src=x onerror="console.log('QAXSS')"><b>QA html title</b>` shows as
+  plain text on the Draft page, in the library and in the tab title. Nothing
+  ran.
+- **The Severity floor** held. With "Arbitration and class-action waiver" as a
+  Red line, the arbitration flag on "QA severity floor" was Dangerous, marked
+  "Raised by your Red line... Without it, this flag would be Caution." After
+  removing the Red line and running the analysis again, it stayed Dangerous,
+  with a note saying why and how to check against only the current Red lines.
+- **File upload.** samples/california-commercial-lease.docx was read in the
+  browser, its text filled the box (26,524 characters) and the file name
+  filled the title. It saved and, on the second try, analyzed.
+- **Signed-out pages.** With no session, the landing page, Sign in and Sign up
+  load, and Library, Red lines, Add a Draft, a Draft's page and an unknown
+  address all redirect to Sign in. After Sign out, Back shows Sign in, not the
+  Draft.
+- **Sign-up.** The form needs an invite code, an email and a password of at
+  least 8 characters, and an empty submit says "Enter your email and
+  password." A real sign-up was not run, because it means entering a password
+  on production. Test it with a fresh invite code by hand.
+- **True phone width.** No horizontal scroll at 375px on the landing page,
+  Library, Red lines, Add a Draft, the California lease report and the
+  long-title Draft. This was still checked through a same-site frame, not a
+  resized window.
+- **The message after a refresh mid-analysis.** Still to test with one browser
+  open.
 
 ## What held up
 
@@ -190,6 +356,9 @@ These happened once and I could not repeat them within the budget.
   to sign".
 - **375px width.** There was no horizontal scroll on the landing page, library,
   Red lines, Add a Draft or a report page.
+- **Fixes from PRs #4 and #5 hold on production.** Library, "Added" and
+  "Analyzed" dates show the local date (Oct 2, not Oct 3). In the California
+  lease, 17.6 is now quoted in a Dangerous "Personal guarantee or pledge" flag.
 - **Basic screen-reader check.** I found no unnamed links or buttons, no
   unlabeled fields, and no images without alt text, and `lang` is set on those
   five pages. This is not a full audit.
