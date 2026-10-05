@@ -584,6 +584,7 @@ button, input { font: inherit; }
 }
 .toast__title { font-weight: 700; font-size: 1.1875rem; line-height: 1.3; }
 .toast__body { font-size: 0.9375rem; line-height: 1.5; overflow-wrap: anywhere; }
+.toast__body--quiet { color: var(--ink-soft); }
 .toast__close { margin-top: 8px; }
 @keyframes toast-rise {
   from { opacity: 0; transform: translateY(12px); }

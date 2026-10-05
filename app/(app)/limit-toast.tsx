@@ -28,8 +28,9 @@ export function AnalysisLimitToast({ limit, onClose }: { limit: number; onClose:
         <a className="link" href={`mailto:${text.email}`}>
           {text.email}
         </a>
-        . {text.kept}
+        .
       </p>
+      <p className="toast__body toast__body--quiet">{text.kept}</p>
       <button className="button-secondary toast__close" type="button" onClick={onClose}>
         {text.close}
       </button>
