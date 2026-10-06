@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { analyzeDraft, readStoredReport } from "../lib/analysis/index.ts";
 import { analysisRequest } from "../lib/analysis/prompt.ts";
+import type { ModelRequest } from "../lib/model/port.ts";
 import { fakeModelClient } from "./support/fake-model-client.ts";
 import {
   analysisPayload,
@@ -288,9 +289,54 @@ describe("analyzeDraft: malformed flags", () => {
     ["a flag has three Readings", { riskFlags: [modelFlag(repairs, { readings: ["One.", "Two.", "Three."] })] }],
     ["a flag has no sentences", { riskFlags: [modelFlag(repairs, { sourceSentences: [] })] }],
     ["the personal-reach fact is missing", { riskFlags: [{ ...modelFlag(repairs), reachesSignerPersonally: "yes" }] }],
-  ])("rejects when %s", async (_case, override) => {
+  ])("rejects when %s on both tries", async (_case, override) => {
     const data = { ...analysisPayload(lease), ...override };
-    await expect(analyzeDraft(lease.text, [], fakeModelClient({ data }))).rejects.toThrow();
+    const client = fakeModelClient({ data }, { data });
+    await expect(analyzeDraft(lease.text, [], client)).rejects.toThrow(/malformed/);
+    expect(client.calls).toBe(2);
+  });
+});
+
+// FINDINGS.md finding 6: one flag with no Reading, or three, failed a whole
+// analysis that the next run finished. A malformed reply is now asked for
+// once more, with the same request, and discarded whole.
+describe("analyzeDraft: one retry for a malformed reply", () => {
+  const good = analysisPayload(lease, { riskFlags: [modelFlag(repairs)] });
+
+  it.each([
+    ["a flag has no Reading", [] as string[]],
+    ["a flag has three Readings", ["One.", "Two.", "Three."]],
+  ])("gives the second reply's report when %s in the first", async (_case, readings) => {
+    const malformed = analysisPayload(lease, {
+      summary: "From the malformed reply.",
+      riskFlags: [modelFlag(plantedClause(lease, "principal-uncapped-indemnity")), modelFlag(repairs, { readings })],
+    });
+    const requests: ModelRequest[] = [];
+    const reply = (data: unknown, modelId: string) => (request: ModelRequest) => {
+      requests.push(request);
+      return { data, modelId };
+    };
+    const client = fakeModelClient(reply(malformed, "fake/first"), reply(good, "fake/second"));
+    const report = await analyzeDraft(lease.text, [], client);
+
+    expect(client.calls).toBe(2);
+    expect(requests[1]).toEqual(requests[0]);
+    expect(report.summary).toBe(good.summary);
+    expect(report.riskFlags.map((flag) => flag.sourceSentences[0].text)).toEqual([repairs.sentence]);
+    expect(report.riskFlags[0].readings).toEqual([repairs.why]);
+    expect(report.modelId).toBe("fake/second");
+  });
+
+  it("makes no extra call when the first reply is well formed", async () => {
+    const client = fakeModelClient({ data: good });
+    await analyzeDraft(lease.text, [], client);
+    expect(client.calls).toBe(1);
+  });
+
+  it("does not retry when the model call itself fails", async () => {
+    const client = fakeModelClient({ error: new Error("The provider timed out.") });
+    await expect(analyzeDraft(lease.text, [], client)).rejects.toThrow("The provider timed out.");
+    expect(client.calls).toBe(1);
   });
 });
 

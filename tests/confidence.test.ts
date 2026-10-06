@@ -45,10 +45,12 @@ describe("analyzeDraft: Confidence", () => {
     ["not one of the three levels", "very high"],
     ["a number", 0.9],
     ["in capitals", "High"],
-  ])("rejects the analysis when a flag's Confidence is %s", async (_case, confidence) => {
+  ])("rejects the analysis when a flag's Confidence is %s on both tries", async (_case, confidence) => {
     const flag = { ...modelFlag(indemnity), confidence };
     const data = analysisPayload(lease, { riskFlags: [flag as unknown as ModelFlag] });
-    await expect(analyzeDraft(lease.text, [], fakeModelClient({ data }))).rejects.toThrow(/confidence/);
+    const client = fakeModelClient({ data }, { data });
+    await expect(analyzeDraft(lease.text, [], client)).rejects.toThrow(/confidence/);
+    expect(client.calls).toBe(2);
   });
 
   it("keeps a low-Confidence Dangerous flag Dangerous, shown first, and rules out the Clean verdict", async () => {

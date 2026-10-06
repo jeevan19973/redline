@@ -2,7 +2,8 @@
 // the real Analysis module and the real OpenRouter adapter, with no Red
 // lines. It runs under plain Node 24 (type stripping, no extra packages) and
 // reads OPENROUTER_API_KEY and OPENROUTER_MODEL from .env.local when present.
-// It makes one paid model call, plus one more for each flag whose Source
+// It makes one paid model call (two when the first reply is malformed and
+// is asked for again), plus one more for each flag whose Source
 // sentences fail verification, whose Non-negotiable basis fails it, or that
 // came back negotiable with no Counter-offer.
 

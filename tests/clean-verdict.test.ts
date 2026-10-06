@@ -243,10 +243,12 @@ describe("analyzeDraft: guaranty gap", () => {
     expect(report.citationFailures).toEqual([]);
   });
 
-  it("rejects the analysis when the guaranty reference is missing or malformed", async () => {
+  it("rejects the analysis when the guaranty reference is missing or malformed on both tries", async () => {
     for (const reference of [undefined, "yes", { refersToSeparateGuaranty: "yes", sourceSentence: "" }]) {
       const data = { ...analysisPayload(lease), guarantyReference: reference };
-      await expect(analyzeDraft(lease.text, [], fakeModelClient({ data }))).rejects.toThrow();
+      const client = fakeModelClient({ data }, { data });
+      await expect(analyzeDraft(lease.text, [], client)).rejects.toThrow(/malformed/);
+      expect(client.calls).toBe(2);
     }
   });
 });

@@ -1,5 +1,6 @@
 import type { ModelClient } from "../model/port.ts";
 import { locateWithRequote, type Located } from "./citations.ts";
+import { completeAndParse } from "./complete.ts";
 import { parseQuestionAnswer, parseRequote } from "./parse.ts";
 import { answerRequoteRequest, questionRequest } from "./prompt.ts";
 import type { SourceSentence } from "./report.ts";
@@ -100,8 +101,9 @@ export async function askDraft(
     throw new Error(checked.problem === "empty" ? "There is no question to ask." : "The question is too long.");
   }
 
-  const { data } = await modelClient.complete(questionRequest(extractedText, checked.question));
-  const { documentAnswers, answer, sourceSentences } = parseQuestionAnswer(data);
+  const {
+    parsed: { documentAnswers, answer, sourceSentences },
+  } = await completeAndParse(modelClient, questionRequest(extractedText, checked.question), parseQuestionAnswer);
   if (!documentAnswers) return doesNotSay("noSupport");
   if (!answer.trim() || sourceSentences.length === 0) return doesNotSay("unsupportedAnswer");
 
@@ -117,7 +119,8 @@ export async function askDraft(
     });
   } catch {
     // The answer could not be verified, and the fixed reply is always a
-    // truthful one. The first call's failure, above, still rejects.
+    // truthful one. The first call's failure, above, still rejects, after
+    // its one retry when the failure was a malformed reply.
     return doesNotSay("requoteFailed");
   }
   if (!located.ok) return doesNotSay("citationFailed");

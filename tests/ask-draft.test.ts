@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { askDraft, displayAnswer, FIXED_COPY, QUESTION_MAX_LENGTH, type Answer } from "../lib/analysis/index.ts";
+import type { ModelRequest } from "../lib/model/port.ts";
 import { fakeModelClient } from "./support/fake-model-client.ts";
 import {
   answerPayload,
@@ -224,7 +225,52 @@ describe("askDraft: failures", () => {
     ["the answer not text", { documentAnswers: true, answer: 3, sourceSentences: [lateCharge.sentence] }],
     ["sourceSentences not a list", { documentAnswers: true, answer: answerText, sourceSentences: lateCharge.sentence }],
     ["a Source sentence not text", { documentAnswers: true, answer: answerText, sourceSentences: [7] }],
-  ])("rejects malformed output: %s", async (_case, data) => {
-    await expect(askDraft(lease.text, question, fakeModelClient({ data }))).rejects.toThrow(/malformed/);
+  ])("rejects malformed output on both tries: %s", async (_case, data) => {
+    const client = fakeModelClient({ data }, { data });
+    await expect(askDraft(lease.text, question, client)).rejects.toThrow(/malformed/);
+    expect(client.calls).toBe(2);
+  });
+
+  it("does not retry when the model call itself fails", async () => {
+    const client = fakeModelClient({ error: new Error("The provider timed out.") });
+    await expect(askDraft(lease.text, question, client)).rejects.toThrow("The provider timed out.");
+    expect(client.calls).toBe(1);
+  });
+});
+
+// FINDINGS.md, seen once: a question showed "couldn't finish answering" and
+// the retry worked. A malformed reply is now asked for once more, with the
+// same request, and discarded whole.
+describe("askDraft: one retry for a malformed reply", () => {
+  const malformed = { documentAnswers: true, answer: "From the malformed reply.", sourceSentences: repairs.sentence };
+
+  it("answers from the second reply when the first is malformed", async () => {
+    const requests: ModelRequest[] = [];
+    const reply = (data: unknown) => (request: ModelRequest) => {
+      requests.push(request);
+      return { data, modelId: "fake/scripted-model" };
+    };
+    const client = fakeModelClient(reply(malformed), reply(answered([lateCharge.sentence])));
+    const answer = await askDraft(lease.text, question, client);
+
+    expect(client.calls).toBe(2);
+    expect(requests[1]).toEqual(requests[0]);
+    expect(displayAnswer(answer)).toEqual({
+      kind: "answered",
+      text: answerText,
+      sourceSentences: [{ text: lateCharge.sentence, offset: lease.text.indexOf(lateCharge.sentence) }],
+    });
+  });
+
+  it("gives the fixed reply when the second reply honestly finds no support", async () => {
+    const client = fakeModelClient({ data: malformed }, { data: noSupportPayload() });
+    expectDoesNotSay(await askDraft(lease.text, question, client));
+    expect(client.calls).toBe(2);
+  });
+
+  it("makes one call when the first reply is well formed", async () => {
+    const client = fakeModelClient({ data: answered([lateCharge.sentence]) });
+    await askDraft(lease.text, question, client);
+    expect(client.calls).toBe(1);
   });
 });
