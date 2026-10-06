@@ -254,7 +254,7 @@ describe("askDraft: one retry for a malformed reply", () => {
     const answer = await askDraft(lease.text, question, client);
 
     expect(client.calls).toBe(2);
-    expect(requests[1]).toEqual(requests[0]);
+    expect(requests[1]).toBe(requests[0]);
     expect(displayAnswer(answer)).toEqual({
       kind: "answered",
       text: answerText,

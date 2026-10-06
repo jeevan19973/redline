@@ -320,11 +320,26 @@ describe("analyzeDraft: one retry for a malformed reply", () => {
     const report = await analyzeDraft(lease.text, [], client);
 
     expect(client.calls).toBe(2);
-    expect(requests[1]).toEqual(requests[0]);
+    expect(requests[1]).toBe(requests[0]);
     expect(report.summary).toBe(good.summary);
     expect(report.riskFlags.map((flag) => flag.sourceSentences[0].text)).toEqual([repairs.sentence]);
     expect(report.riskFlags[0].readings).toEqual([repairs.why]);
     expect(report.modelId).toBe("fake/second");
+  });
+
+  it("makes both analysis calls before any regeneration call", async () => {
+    const misquoted = analysisPayload(lease, { riskFlags: [modelFlag(repairs, { sourceSentences: ["Not in the lease."] })] });
+    const names: string[] = [];
+    const reply = (data: unknown) => (request: ModelRequest) => {
+      names.push(request.name);
+      return { data, modelId: "fake/scripted-model" };
+    };
+    const malformed = analysisPayload(lease, { riskFlags: [modelFlag(repairs, { readings: [] })] });
+    const client = fakeModelClient(reply(malformed), reply(misquoted), reply(requotePayload([repairs.sentence])));
+    const report = await analyzeDraft(lease.text, [], client);
+
+    expect(names).toEqual(["draft_analysis", "draft_analysis", "source_sentence_requote"]);
+    expect(report.riskFlags.map((flag) => flag.sourceSentences[0].text)).toEqual([repairs.sentence]);
   });
 
   it("makes no extra call when the first reply is well formed", async () => {

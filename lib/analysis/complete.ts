@@ -5,7 +5,10 @@ import { MalformedModelOutput } from "./parse.ts";
 // A reply the parser rejects as malformed is discarded whole and the same
 // request is sent once more; a second malformed reply rejects. Errors from
 // the model client itself (timeouts, provider errors, content that is not
-// JSON) are not retried, so a slow provider never doubles the wait.
+// JSON) are not retried, so a slow provider never doubles the wait
+// (.scratch/malformed-model-output/spec.md, FINDINGS.md finding 6). This is
+// separate from the regeneration calls in citations.ts, which ask again for
+// a quotation that did not match the text.
 export async function completeAndParse<T>(
   modelClient: ModelClient,
   request: ModelRequest,

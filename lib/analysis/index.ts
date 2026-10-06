@@ -67,10 +67,9 @@ export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./a
 // or its output is malformed. A malformed reply to the main analysis call is
 // discarded whole and the same request sent once more; only a second
 // malformed reply rejects, and the Report's model id is the one that parsed.
-// A flag whose Source sentences cannot be
-// verified, even after one regeneration call, is withheld and recorded in
-// citationFailures instead; so is a guaranty-gap sentence that fails the
-// same way.
+// A flag whose Source sentences cannot be verified, even after one
+// regeneration call, is withheld and recorded in citationFailures instead;
+// so is a guaranty-gap sentence that fails the same way.
 // Every shown flag is negotiable, Non-negotiable or unconfirmed. A
 // Non-negotiable flag never carries a Counter-offer, and its basis sentence
 // is verified like a Source sentence; one that still fails after a
