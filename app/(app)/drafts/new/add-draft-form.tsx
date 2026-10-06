@@ -4,6 +4,7 @@ import { startTransition, useActionState, useRef, useState } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { fitsInOneSave } from "@/lib/draft-limits";
 import { copy } from "../../copy";
+import { AnalysisLimitToast } from "../../limit-toast";
 import { createDraft, type CreateDraftState } from "../actions";
 import { ACCEPTED_FILES } from "../accepted-files";
 import { readFile } from "../read-file";
@@ -39,12 +40,16 @@ export function AddDraftForm() {
   const [titleEdited, setTitleEdited] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
+  // The save result whose limit toast the Signer closed. Each save returns a
+  // new result, so saving again at the limit shows the toast again.
+  const [closedToast, setClosedToast] = useState<CreateDraftState | null>(null);
   // Counts file choices, so a slow read that a later choice or Remove file
   // has overtaken is dropped.
   const choice = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const message = refusal ?? state.error;
+  const limit = closedToast === state ? undefined : state.analysisLimit;
 
   async function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.target;
@@ -164,6 +169,7 @@ export function AddDraftForm() {
           {pending ? text.pending : text.save}
         </button>
       </div>
+      {limit !== undefined && <AnalysisLimitToast limit={limit} onClose={() => setClosedToast(state)} />}
     </form>
   );
 }

@@ -16,14 +16,22 @@ const fileRefusals = {
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 // The one-time limit per Signer (ADR 0007): what's left, in the rail, and
-// the refusal once it's used. Shared by every action that checks it.
+// the refusal once it's used. Shared by every action that checks it. An
+// analysis refused at the limit shows as a toast that names who to email for
+// more (FINDINGS.md finding 5); paying for more comes later.
 const limit = {
   label: "Your limit",
   analysesLeft: (left: number, limit: number) => `${left} of ${count(limit, "analysis", "analyses")} left`,
   questionsLeft: (left: number, limit: number) => `${left} of ${count(limit, "question", "questions")} left`,
   unavailable: "Underline couldn't load how many you have left.",
-  analysisReached: (limit: number) =>
-    `You've reached your limit of ${count(limit, "analysis", "analyses")}, so Underline can't run another. Your Drafts and reports are still here. The person who invited you can raise your limit.`,
+  analysisToast: {
+    title: (limit: number) => (limit === 1 ? "You've used your one analysis" : `You've used all ${limit} analyses`),
+    // The sentence runs on into the email link, then a full stop.
+    contact: "To get more, email Jeevan Surya at",
+    email: "jeevansuryamaddu@gmail.com",
+    kept: "Your Drafts and reports are still here.",
+    close: "Close",
+  },
   questionReached: (limit: number) =>
     `You've reached your limit of ${count(limit, "question", "questions")}, so Underline can't answer another. Your Drafts and reports are still here. The person who invited you can raise your limit.`,
 } as const;
