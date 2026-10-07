@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (An analysis recovers from one malformed reply), whose retry this reuses
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Only the parser's malformed-output error on the main question reply triggers a retry; model client errors fail as today
 - [x] The retry resends the identical request, at most once, and discards the malformed reply whole

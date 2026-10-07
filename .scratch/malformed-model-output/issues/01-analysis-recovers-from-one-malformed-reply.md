@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Only the parser's malformed-output error on the main analysis reply triggers a retry; errors from the model client itself (timeouts, HTTP or provider errors, content that is not JSON) fail as today
 - [x] The retry resends the identical request through the same model client, at most once

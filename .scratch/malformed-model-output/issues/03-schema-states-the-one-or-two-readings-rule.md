@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (An analysis recovers from one malformed reply), so the retry is in place if the provider turns out to reject the limit
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The Risk flag's Readings in the analysis request's schema are limited to one or two items; the description text stays
 - [x] A test asserts the analysis request's schema carries the limit

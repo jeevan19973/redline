@@ -1,6 +1,6 @@
 # Spec: one malformed model reply no longer fails an analysis or a question
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** FINDINGS.md finding 6, and the "A question failed once" item under "Seen once".
 
