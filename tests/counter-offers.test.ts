@@ -212,11 +212,12 @@ describe("analyzeDraft: Counter-offers", () => {
     expect(report.counterOfferGaps).toEqual([]);
   });
 
-  it("rejects the analysis when the model sends a negotiability that is neither value", async () => {
+  it("rejects the analysis when the model sends a negotiability that is neither value on both tries", async () => {
     const flag = { ...modelFlag(renewal), negotiability: "maybe" };
-    await expect(
-      analyzeDraft(lease.text, [], fakeModelClient({ data: analysisPayload(lease, { riskFlags: [flag as never] }) })),
-    ).rejects.toThrow();
+    const data = analysisPayload(lease, { riskFlags: [flag as never] });
+    const client = fakeModelClient({ data }, { data });
+    await expect(analyzeDraft(lease.text, [], client)).rejects.toThrow(/malformed/);
+    expect(client.calls).toBe(2);
   });
 });
 

@@ -8,8 +8,9 @@ import { CONFIDENCE_LEVELS, type ProposedFlag } from "./report.ts";
 // this text (spec, Testing Decisions).
 
 // Strict mode requires every property to be listed as required and no
-// others allowed. Counts the schema cannot state portably (at least one
-// sentence, one or two Readings) are checked in parse.ts.
+// others allowed. The schema states the one-or-two Readings limit, and
+// parse.ts checks it again along with the counts the schema does not state
+// (at least one sentence).
 // With free-text Red lines, a flag can also be of clause type "redLine" and
 // name the Red line that produced it; the ids are an enum, so the model can
 // only name one it was given. Without any, the schema offers neither.
@@ -40,6 +41,8 @@ function riskFlagSchema(redLines: readonly FreeTextRedLine[]): JsonSchema {
     readings: {
       type: "array",
       items: { type: "string" },
+      minItems: 1,
+      maxItems: 2,
       description:
         "One plain, confident statement of what the sentences do to the Signer. Two only when the text honestly supports two different readings.",
     },

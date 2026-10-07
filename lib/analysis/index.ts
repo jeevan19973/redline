@@ -1,4 +1,5 @@
 import type { ModelClient } from "../model/port.ts";
+import { completeAndParse } from "./complete.ts";
 import { rank, verifyFlags } from "./flags.ts";
 import { verifyGuaranty } from "./guaranty.ts";
 import { keepEarlierRaisedFlags } from "./kept-flags.ts";
@@ -50,8 +51,9 @@ export { FIXED_COPY } from "./templates.ts";
 // finds no support or gives no answer or no Source sentence (one model call),
 // or quotes a sentence that is not in the text exactly even after one
 // regeneration call, or that call fails. An empty or overlong question (see
-// checkQuestion) is rejected before any model call, and a failed first call
-// or malformed output from it rejects too.
+// checkQuestion) is rejected before any model call. A malformed reply to the
+// first call is discarded and the call made once more; a failed first call,
+// or a second malformed reply, rejects.
 export type { Answer, DoesNotSayReason, QuestionCheck, ShownAnswer } from "./answer.ts";
 export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./answer.ts";
 
@@ -62,10 +64,12 @@ export { askDraft, checkQuestion, displayAnswer, QUESTION_MAX_LENGTH } from "./a
 // floor). A flag that names a free-text Red line not passed in is dropped
 // and recorded in unmatchedRedLineFlags.
 // Rejects, rather than returning part of a Report, when a model call fails
-// or its output is malformed. A flag whose Source sentences cannot be
-// verified, even after one regeneration call, is withheld and recorded in
-// citationFailures instead; so is a guaranty-gap sentence that fails the
-// same way.
+// or its output is malformed. A malformed reply to the main analysis call is
+// discarded whole and the same request sent once more; only a second
+// malformed reply rejects, and the Report's model id is the one that parsed.
+// A flag whose Source sentences cannot be verified, even after one
+// regeneration call, is withheld and recorded in citationFailures instead;
+// so is a guaranty-gap sentence that fails the same way.
 // Every shown flag is negotiable, Non-negotiable or unconfirmed. A
 // Non-negotiable flag never carries a Counter-offer, and its basis sentence
 // is verified like a Source sentence; one that still fails after a
@@ -105,8 +109,10 @@ export async function analyzeDraft(
   if (!/\S/.test(extractedText)) throw new Error("There is no text to analyze.");
   const redLinesSnapshot = snapshotRedLines(redLines);
 
-  const { data, modelId } = await modelClient.complete(analysisRequest(extractedText, freeTextRedLines(redLinesSnapshot)));
-  const { summary, riskFlags: proposed, guarantyReference } = parseAnalysis(data);
+  const {
+    parsed: { summary, riskFlags: proposed, guarantyReference },
+    modelId,
+  } = await completeAndParse(modelClient, analysisRequest(extractedText, freeTextRedLines(redLinesSnapshot)), parseAnalysis);
   // The first regeneration calls go out flags first, in flag order, then the
   // guaranty sentence's. A flag's own later calls (its Non-negotiable basis,
   // then its Counter-offer) follow its earlier ones.

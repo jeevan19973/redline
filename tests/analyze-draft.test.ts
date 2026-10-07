@@ -83,8 +83,10 @@ describe("analyzeDraft: failures", () => {
     ["the output is not an object", "A lease between a landlord and a tenant."],
     ["the output is null", null],
     ["the output is an array", [{ summary: "A lease." }]],
-  ])("rejects when %s", async (_case, data) => {
-    await expect(analyzeDraft(fixture.text, [], fakeModelClient({ data }))).rejects.toThrow();
+  ])("rejects when %s on both tries", async (_case, data) => {
+    const client = fakeModelClient({ data }, { data });
+    await expect(analyzeDraft(fixture.text, [], client)).rejects.toThrow(/malformed/);
+    expect(client.calls).toBe(2);
   });
 
   it("rejects when the model call fails", async () => {
