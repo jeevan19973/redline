@@ -226,6 +226,18 @@ the whole analysis when one flag breaks the rule.
 Severity: a failed run. Nothing wrong is shown and nothing is charged, but a
 long lease fails often enough that a Signer will see it.
 
+**Resolved.** The schema sent to the model now limits `readings` to one or
+two items, and when the reply to an analysis or a question is still
+malformed, Underline sends the same request once more and discards the
+first reply whole. A run that recovers is charged once; a run malformed on
+both tries fails as before and is not charged. Timeouts and provider errors
+are not retried. Checked on a preview of this fix on Oct 6:
+"california-commercial-lease.docx" was run again 5 times and gave a report
+every time, in 28 to 42 seconds, with analyses left going from 8 to 3. The
+preview's logs held no errors, so no "readings must hold one or two
+Readings". A retry that recovers is not logged, so the check cannot say
+whether any of the 5 runs needed one.
+
 ## Seen once
 
 These happened once and I could not repeat them within the budget.
@@ -268,6 +280,10 @@ These happened once and I could not repeat them within the budget.
   on Oct 4, it was answered each time in 6 to 10 seconds and charged once each.
   **Not reproduced** in 5 tries since. It may have been the same kind of
   malformed reply as finding 6.
+  **Covered by the fix for finding 6.** A malformed reply to a question is
+  now asked for once more too. On the Oct 6 preview, the question was asked
+  3 times on "QA long lease" and got "This document doesn't say." each time,
+  charged once each (questions left went from 13 to 10).
 - **An analysis failed on malformed model output.** This repeated, so it is now
   finding 6. The first analysis of
   "california-commercial-lease.docx" showed "Underline couldn't finish
