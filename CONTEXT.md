@@ -49,11 +49,11 @@ A clause the Counterparty will not change, typically in standard terms of servic
 _Avoid_: Boilerplate (boilerplate is often negotiable), fixed term
 
 **Reading**:
-Underline's plain, confident statement of what a Source sentence does to the Signer. Every Risk flag has one Reading, a severity and a Confidence.
+Underline's plain, confident statement of what a Source sentence does to the Signer. Every Risk flag has one Reading, or two when the sentence honestly supports two different readings, such as deliberately ambiguous wording. A flag also has one severity and one Confidence, whatever its number of Readings.
 _Avoid_: Interpretation, explanation, analysis
 
 **Confidence**:
-A high, medium or low label on a Risk flag saying how sure Underline is of its reading of the Source sentence. Separate from severity, and it never lowers it.
+A high, medium or low label on a Risk flag saying how sure Underline is that its Readings are what the Source sentence means. Separate from severity, and it never lowers it.
 _Avoid_: Certainty, probability, score
 
 **Clean verdict**:
